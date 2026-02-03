@@ -1,142 +1,811 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CII Performance & Strategy Lab</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CII Calculator Dashboard (IMO)</title>
+
+  <!-- ECharts (high-quality charts) -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #0b1020;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.09);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --border: rgba(255,255,255,.10);
+      --shadow: 0 16px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --accent: #7c5cff;
+      --good: #2bd576;
+      --warn: #ffcc00;
+      --bad: #ff5c7a;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(124,92,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 80% 20%, rgba(43,213,118,.18), transparent 55%),
+                  radial-gradient(1200px 700px at 50% 90%, rgba(255,92,122,.10), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      line-height:1.35;
+    }
+
+    header{
+      padding:22px 20px 12px;
+      max-width: 1280px;
+      margin: 0 auto;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+    }
+    header .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      color: var(--muted);
+      font-size: 13px;
+      max-width: 740px;
+    }
+    .pillrow{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .pill{
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+      backdrop-filter: blur(10px);
+    }
+    .pill strong{ color: var(--text); font-weight:600; }
+
+    main{
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 10px 20px 26px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:16px;
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .card .hd .h{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .card .hd .h .t{ font-weight:650; }
+    .card .hd .h .d{ color: var(--muted); font-size: 12px; }
+    .card .bd{ padding: 14px 16px; }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    label{
+      display:flex; flex-direction:column; gap:6px;
+      font-size:12px;
+      color: var(--muted);
+    }
+    input, select{
+      width:100%;
+      padding:10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      outline:none;
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+    }
+    input::placeholder{ color: rgba(255,255,255,.40); }
+
+    .btnrow{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    button{
+      cursor:pointer;
+      border:none;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 650;
+      background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.55));
+      color: white;
+      box-shadow: 0 12px 28px rgba(124,92,255,.25);
+      transition: transform .08s ease, filter .2s ease;
+    }
+    button:hover{ filter: brightness(1.05); }
+    button:active{ transform: translateY(1px); }
+
+    .ghost{
+      background: rgba(255,255,255,.07);
+      box-shadow:none;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .kpi{
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .kpi .name{ color: var(--muted); font-size:12px; }
+    .kpi .val{ font-size: 18px; font-weight: 750; margin-top: 4px; }
+    .kpi .hint{ color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+    .fuel-table{
+      width:100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      margin-top: 6px;
+    }
+    .fuel-table th{
+      text-align:left;
+      color: var(--muted);
+      font-weight:600;
+      font-size: 12px;
+      padding: 0 6px 6px;
+    }
+    .fuel-row{
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    .fuel-table td{
+      padding: 10px 6px;
+      vertical-align:middle;
+    }
+    .fuel-table td:first-child{ padding-left:10px; }
+    .fuel-table td:last-child{ padding-right:10px; }
+    .rowbox{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.22);
+      border-radius: 12px;
+      padding: 8px 9px;
+      width:100%;
+    }
+    .mini{
+      font-size:12px;
+      color: var(--muted);
+    }
+    .danger{
+      color: #ffd1d8;
+      background: rgba(255,92,122,.12);
+      border: 1px solid rgba(255,92,122,.25);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .charts{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      grid-template-rows: 340px 340px;
+      gap:16px;
+    }
+    .chart{
+      height: 340px;
+    }
+    .chart.big{ grid-column: 1 / span 2; height: 340px; }
+
+    .footer-note{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 1060px){
+      main{ grid-template-columns: 1fr; }
+      .charts{ grid-template-columns: 1fr; grid-template-rows: 340px 340px 340px; }
+      .chart.big{ grid-column:auto; }
+    }
+  </style>
 </head>
-<body class="bg-white font-sans p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto border border-slate-200 rounded-3xl shadow-2xl overflow-hidden">
-        <div class="bg-slate-900 p-8 text-white">
-            <h1 class="text-2xl font-bold tracking-tight uppercase">CII <span class="text-blue-400">Calculator</span></h1>
-            <p class="text-slate-400 text-sm mt-1">Operational Efficiency & Strategy Simulator</p>
-        </div>
-
-        <div class="p-8 grid md:grid-cols-2 gap-10 bg-slate-50">
-            <div class="space-y-4">
-                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Inputs</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold mb-1">Fuel Type</label>
-                        <select id="fuelType" onchange="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200">
-                            <option value="3.206">MDO / MGO (3.206)</option>
-                            <option value="3.114">HFO (3.114)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold mb-1">DWT Capacity</label>
-                        <input type="number" id="capacity" value="50000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold mb-1">Fuel (mt)</label>
-                        <input type="number" id="fuel" value="1000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200 text-blue-600 font-bold">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold mb-1">Distance (nm)</label>
-                        <input type="number" id="distance" value="20000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200 text-green-600 font-bold">
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col justify-center items-center bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                <p class="text-[10px] font-black uppercase text-slate-400">Current 2026 Rating</p>
-                <div id="ratingBox" class="text-8xl font-black my-2">C</div>
-                <p id="ciiVal" class="text-lg font-mono text-slate-500">0.00</p>
-            </div>
-        </div>
-
-        <div class="p-8 border-t border-slate-100">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 text-center">Efficiency Strategy: How to reach Grade A</h2>
-            <div class="h-64">
-                <canvas id="strategyChart"></canvas>
-            </div>
-            <div class="mt-8 grid grid-cols-3 gap-4 text-center">
-                <div class="p-4 bg-blue-50 rounded-xl">
-                    <p class="text-[10px] font-bold text-blue-400 uppercase">Slow Steaming</p>
-                    <p class="text-xs text-blue-900 mt-1">Reduce fuel by 10% to improve rating.</p>
-                </div>
-                <div class="p-4 bg-green-50 rounded-xl">
-                    <p class="text-[10px] font-bold text-green-400 uppercase">Ballast Leg</p>
-                    <p class="text-xs text-green-900 mt-1">Increase distance to lower intensity.</p>
-                </div>
-                <div class="p-4 bg-amber-50 rounded-xl">
-                    <p class="text-[10px] font-bold text-amber-400 uppercase">2030 Risk</p>
-                    <p class="text-xs text-amber-900 mt-1">Stricter limits make this ship a 'D'.</p>
-                </div>
-            </div>
-        </div>
+<body>
+  <header>
+    <div class="title">
+      <h1>CII Dashboard — Υπολογισμός Attained/Required & Rating (A–E)</h1>
+      <div class="subtitle">
+        Υπολογισμός Attained CII από κατανάλωση καυσίμου και απόσταση, υπολογισμός Required CII από reference line (a,c) και reduction factor (Z),
+        και rating με dd vectors. Εμφάνιση με gauge + breakdown CO₂ + projection αυστηροποίησης ανά έτος.
+      </div>
     </div>
+    <div class="pillrow">
+      <div class="pill">Μονάδα CII: <strong>gCO₂ / (capacity·nm)</strong></div>
+      <div class="pill">Capacity: <strong>DWT ή GT</strong> (ανά ship type)</div>
+      <div class="pill">Front-end μόνο • <strong>ECharts</strong></div>
+    </div>
+  </header>
 
-    <script>
-        let myChart;
+  <main>
+    <!-- LEFT: Inputs -->
+    <section class="card">
+      <div class="hd">
+        <div class="h">
+          <div class="t">Είσοδοι</div>
+          <div class="d">Βάλε ship type, capacity, distance & fuel consumption</div>
+        </div>
+      </div>
+      <div class="bd">
 
-        function calculate() {
-            const cap = parseFloat(document.getElementById('capacity').value);
-            const fuel = parseFloat(document.getElementById('fuel').value);
-            const dist = parseFloat(document.getElementById('distance').value);
-            const cf = parseFloat(document.getElementById('fuelType').value);
+        <div class="grid2">
+          <label>
+            Ship type (για a,c & dd vectors)
+            <select id="shipType">
+              <option value="bulk">Bulk carrier (DWT)</option>
+              <option value="tanker">Tanker (DWT)</option>
+              <option value="container">Container ship (DWT)</option>
+              <option value="gas_65p">Gas carrier ≥ 65,000 DWT (DWT)</option>
+              <option value="gas_65m">Gas carrier &lt; 65,000 DWT (DWT)</option>
+              <option value="general_20p">General cargo ≥ 20,000 DWT (DWT)</option>
+              <option value="general_20m">General cargo &lt; 20,000 DWT (DWT)</option>
+              <option value="refrig">Refrigerated cargo carrier (DWT)</option>
+              <option value="combo">Combination carrier (DWT)</option>
+              <option value="lng_100p">LNG carrier ≥ 100,000 DWT (DWT)</option>
+              <option value="lng_100m">LNG carrier &lt; 100,000 DWT (DWT)</option>
+              <option value="roro_vc">Ro-ro cargo (Vehicle Carrier) (GT)</option>
+              <option value="roro_cargo">Ro-ro cargo ship (GT)</option>
+              <option value="roro_pax">Ro-ro passenger ship (GT)</option>
+              <option value="cruise">Cruise passenger ship (GT)</option>
+              <option value="hsc">High-speed craft (GT)</option>
+            </select>
+          </label>
 
-            const attained = (fuel * cf * 1000000) / (cap * dist);
-            const ref = 4745 * Math.pow(cap, -0.622); // Required C-line
+          <label>
+            Reporting year (για Z reduction factor)
+            <select id="year">
+              <option>2023</option>
+              <option>2024</option>
+              <option>2025</option>
+              <option selected>2026</option>
+              <option>2027</option>
+              <option>2028</option>
+              <option>2029</option>
+              <option>2030</option>
+            </select>
+          </label>
+        </div>
 
-            // Boundaries
-            const a = ref * 0.83;
-            const b = ref * 0.94;
-            const c = ref * 1.06;
-            const d = ref * 1.28;
+        <div class="grid2" style="margin-top:12px;">
+          <label>
+            Capacity (DWT ή GT)
+            <input id="capacity" type="number" min="1" step="1" value="62000" />
+          </label>
 
-            let rating = 'E';
-            let color = '#ef4444';
-            if (attained <= a) { rating = 'A'; color = '#22c55e'; }
-            else if (attained <= b) { rating = 'B'; color = '#84cc16'; }
-            else if (attained <= c) { rating = 'C'; color = '#eab308'; }
-            else if (attained <= d) { rating = 'D'; color = '#f97316'; }
+          <label>
+            Annual distance travelled (nm)
+            <input id="distance" type="number" min="1" step="1" value="60045" />
+          </label>
+        </div>
 
-            document.getElementById('ratingBox').innerText = rating;
-            document.getElementById('ratingBox').style.color = color;
-            document.getElementById('ciiVal').innerText = `Attained: ${attained.toFixed(2)}`;
+        <div class="grid2" style="margin-top:12px;">
+          <label>
+            Correction factor (προαιρετικό, G5) ×
+            <input id="corr" type="number" min="0" step="0.01" value="1.00" />
+          </label>
 
-            updateChart(attained, a, b, c);
-        }
+          <label>
+            Μονάδα fuel consumption
+            <select id="fuelUnit">
+              <option value="ton" selected>tonnes (t)</option>
+              <option value="kg">kg</option>
+            </select>
+          </label>
+        </div>
 
-        function updateChart(current, a, b, c) {
-            const ctx = document.getElementById('strategyChart').getContext('2d');
-            if (myChart) myChart.destroy();
+        <div class="danger">
+          Αν δεν εφαρμόζεις correction factors/voyage adjustments, άφησε <strong>1.00</strong>.
+          Για εξειδικευμένες περιπτώσεις (π.χ. reefer containers, LNG reliquefaction κλπ.) βάλε multiplier που ταιριάζει στη μεθοδολογία σου.
+        </div>
 
-            myChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Current', '-10% Fuel', '+10% Distance', '2030 Limit'],
-                    datasets: [{
-                        label: 'CII Value',
-                        data: [current, current * 0.9, current * 0.91, current], 
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 6,
-                        pointBackgroundColor: '#2563eb'
-                    }, {
-                        label: 'Grade A Target',
-                        data: [a, a, a, a * 0.85], // 2030 is stricter
-                        borderColor: '#22c55e',
-                        borderDash: [5, 5],
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { beginAtZero: false, title: { display: true, text: 'Intensity' } } }
-                }
-            });
-        }
+        <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="font-weight:700;">Καύσιμα & CF (tCO₂ / t fuel)</div>
+            <div class="mini">Μπορείς να προσθέσεις/αλλάξεις CF (π.χ. αν έχεις επίσημα factors για συγκεκριμένο fuel).</div>
+          </div>
+          <button class="ghost" id="addFuel">+ Fuel row</button>
+        </div>
 
-        calculate();
-    </script>
+        <table class="fuel-table" id="fuelTable">
+          <thead>
+            <tr>
+              <th style="width:38%;">Fuel</th>
+              <th style="width:28%;">Consumption</th>
+              <th style="width:22%;">CF</th>
+              <th style="width:12%;">&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody id="fuelBody"></tbody>
+        </table>
+
+        <div class="btnrow">
+          <button id="calcBtn">Υπολόγισε</button>
+          <button class="ghost" id="demoBtn">Demo δεδομένα</button>
+          <button class="ghost" id="exportBtn">Export PNG</button>
+        </div>
+
+        <div class="footer-note">
+          Πηγή λογικής rating: Required CII + dd vectors → A/B/C/D/E boundaries. :contentReference[oaicite:2]{index=2}
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: KPIs + Charts -->
+    <section class="card">
+      <div class="hd">
+        <div class="h">
+          <div class="t">Αποτελέσματα & Διαγράμματα</div>
+          <div class="d">Επαγγελματικό dashboard: rating, boundaries, breakdown, projection</div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="kpis" style="margin-bottom:14px;">
+          <div class="kpi">
+            <div class="name">Total CO₂ emissions</div>
+            <div class="val" id="kpiCO2">—</div>
+            <div class="hint">Σύνολο από όλα τα fuels</div>
+          </div>
+          <div class="kpi">
+            <div class="name">Attained CII</div>
+            <div class="val" id="kpiAtt">—</div>
+            <div class="hint">gCO₂ / (capacity·nm)</div>
+          </div>
+          <div class="kpi">
+            <div class="name">Required CII</div>
+            <div class="val" id="kpiReq">—</div>
+            <div class="hint">Από reference line × (1−Z)</div>
+          </div>
+          <div class="kpi">
+            <div class="name">CII Rating</div>
+            <div class="val" id="kpiRating">—</div>
+            <div class="hint" id="kpiBand">—</div>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="card" style="border:none; box-shadow:none; background:rgba(0,0,0,.18);">
+            <div class="hd" style="border-bottom:1px solid rgba(255,255,255,.08);">
+              <div class="h">
+                <div class="t">Rating Gauge</div>
+                <div class="d">Attained vs Required + bands A–E</div>
+              </div>
+            </div>
+            <div class="bd"><div id="gauge" class="chart"></div></div>
+          </div>
+
+          <div class="card" style="border:none; box-shadow:none; background:rgba(0,0,0,.18);">
+            <div class="hd" style="border-bottom:1px solid rgba(255,255,255,.08);">
+              <div class="h">
+                <div class="t">CO₂ ανά καύσιμο</div>
+                <div class="d">Πού “γράφει” περισσότερο CO₂</div>
+              </div>
+            </div>
+            <div class="bd"><div id="bar" class="chart"></div></div>
+          </div>
+
+          <div class="card" style="border:none; box-shadow:none; background:rgba(0,0,0,.18);">
+            <div class="hd" style="border-bottom:1px solid rgba(255,255,255,.08);">
+              <div class="h">
+                <div class="t">Projection αυστηροποίησης</div>
+                <div class="d">Required CII ανά έτος vs σταθερό Attained</div>
+              </div>
+            </div>
+            <div class="bd"><div id="line" class="chart big"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+/* ---------------------------
+   IMO-ish parameters (G2/G3/G4)
+   From public tables a,c, dd vectors, Z factors.
+   Sources summarized in IMO resolutions / class material.  :contentReference[oaicite:3]{index=3}
+----------------------------*/
+
+// Reference line: CII_ref = a * (Capacity)^(-c), with some piecewise capacity caps.
+const REF = {
+  bulk:        { capType:"DWT", piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
+  tanker:      { capType:"DWT", piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
+  container:   { capType:"DWT", piece: (cap)=>({a:1984, c:0.489, capAdj: cap}) },
+
+  gas_65p:     { capType:"DWT", piece: (cap)=>({a:1.4405e11, c:2.071, capAdj: cap}) }, // "14405E+7" shown in slide; using 1.4405e11 to keep numeric stable
+  gas_65m:     { capType:"DWT", piece: (cap)=>({a:8104, c:0.639, capAdj: cap}) },
+
+  general_20p: { capType:"DWT", piece: (cap)=>({a:31948, c:0.792, capAdj: cap}) },
+  general_20m: { capType:"DWT", piece: (cap)=>({a:588, c:0.3885, capAdj: cap}) },
+
+  refrig:      { capType:"DWT", piece: (cap)=>({a:4600, c:0.557, capAdj: cap}) },
+  combo:       { capType:"DWT", piece: (cap)=>({a:5119, c:0.622, capAdj: cap}) },
+
+  // LNG carriers: piecewise (as shown)
+  lng_100p:    { capType:"DWT", piece: (cap)=>({a:9.827, c:0.0, capAdj: Math.min(Math.max(cap, 100000), 100000)}) }, // constant
+  lng_100m:    { capType:"DWT", piece: (cap)=>{
+                  if (cap >= 65000){
+                    return {a:1.4479e14, c:2.673, capAdj: Math.min(cap, 100000)}; // clamp at 100k for this band
+                  }
+                  return {a:1.4479e14, c:2.673, capAdj: 65000}; // clamp at 65k
+                }},
+
+  // GT-based types
+  roro_vc:     { capType:"GT",  piece: (cap)=>{
+                  if (cap >= 57700) return {a:3627, c:0.590, capAdj: 57700};
+                  if (cap >= 30000) return {a:3627, c:0.590, capAdj: cap};
+                  return {a:330, c:0.329, capAdj: cap};
+                }},
+  roro_cargo:  { capType:"GT",  piece: (cap)=>({a:1967, c:0.485, capAdj: cap}) },
+  roro_pax:    { capType:"GT",  piece: (cap)=>({a:2023, c:0.460, capAdj: cap}) },
+  hsc:         { capType:"GT",  piece: (cap)=>({a:4196, c:0.460, capAdj: cap}) },
+  cruise:      { capType:"GT",  piece: (cap)=>({a:930,  c:0.3839, capAdj: cap}) },
+};
+
+// dd vectors (multipliers). Rating via ratio = Attained/Required:
+// if ratio < d1 => A; < d2 => B; < d3 => C; < d4 => D; else E
+const DD = {
+  bulk:        {d1:0.86, d2:0.94, d3:1.06, d4:1.18},
+  tanker:      {d1:0.82, d2:0.93, d3:1.08, d4:1.28},
+  container:   {d1:0.83, d2:0.94, d3:1.07, d4:1.19},
+  gas_65p:     {d1:0.81, d2:0.91, d3:1.12, d4:1.44},
+  gas_65m:     {d1:0.85, d2:0.95, d3:1.06, d4:1.25},
+  general_20p: {d1:0.83, d2:0.94, d3:1.06, d4:1.19},
+  general_20m: {d1:0.83, d2:0.94, d3:1.06, d4:1.19},
+  refrig:      {d1:0.78, d2:0.91, d3:1.07, d4:1.20},
+  combo:       {d1:0.87, d2:0.96, d3:1.06, d4:1.14},
+  lng_100p:    {d1:0.89, d2:0.98, d3:1.06, d4:1.13},
+  lng_100m:    {d1:0.78, d2:0.92, d3:1.10, d4:1.37},
+  roro_vc:     {d1:0.86, d2:0.94, d3:1.06, d4:1.16},
+  roro_cargo:  {d1:0.76, d2:0.89, d3:1.08, d4:1.27},
+  roro_pax:    {d1:0.76, d2:0.92, d3:1.14, d4:1.30},
+  cruise:      {d1:0.87, d2:0.95, d3:1.06, d4:1.16},
+  hsc:         {d1:0.87, d2:0.95, d3:1.06, d4:1.16},
+};
+
+// Reduction factor Z%: known 2023-2026 and often described as +2% yearly afterwards (may be subject to review).
+function Z(year){
+  const y = Number(year);
+  if (y === 2023) return 5;
+  if (y === 2024) return 7;
+  if (y === 2025) return 9;
+  if (y === 2026) return 11;
+  // Provisional extension (as many summaries show +2% per year); adjust if you have updated official values.
+  if (y >= 2027 && y <= 2030) return 5 + 2*(y-2023);
+  return 11;
+}
+
+// Default CF factors (tCO2 / t fuel). You can edit/add.
+const DEFAULT_FUELS = [
+  {name:"HFO",  cf:3.114, cons: 4200},
+  {name:"MGO/MDO", cf:3.206, cons: 1300},
+  {name:"LFO",  cf:3.151, cons: 0},
+  {name:"LPG (Propane)", cf:3.000, cons: 0},
+  {name:"Custom", cf:3.114, cons: 0}
+];
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+function fmt(n, d=3){
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("el-GR", {maximumFractionDigits:d, minimumFractionDigits:d});
+}
+function fmt0(n){
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("el-GR", {maximumFractionDigits:0});
+}
+
+const els = {
+  shipType: document.getElementById("shipType"),
+  year: document.getElementById("year"),
+  capacity: document.getElementById("capacity"),
+  distance: document.getElementById("distance"),
+  corr: document.getElementById("corr"),
+  fuelUnit: document.getElementById("fuelUnit"),
+  fuelBody: document.getElementById("fuelBody"),
+  addFuel: document.getElementById("addFuel"),
+  calcBtn: document.getElementById("calcBtn"),
+  demoBtn: document.getElementById("demoBtn"),
+  exportBtn: document.getElementById("exportBtn"),
+
+  kpiCO2: document.getElementById("kpiCO2"),
+  kpiAtt: document.getElementById("kpiAtt"),
+  kpiReq: document.getElementById("kpiReq"),
+  kpiRating: document.getElementById("kpiRating"),
+  kpiBand: document.getElementById("kpiBand"),
+};
+
+let gaugeChart, barChart, lineChart;
+
+function fuelRowTemplate({name, cons, cf}){
+  const tr = document.createElement("tr");
+  tr.className = "fuel-row";
+  tr.innerHTML = `
+    <td>
+      <input class="rowbox fuel-name" value="${escapeHtml(name)}" />
+    </td>
+    <td>
+      <input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons ?? 0}" />
+    </td>
+    <td>
+      <input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf ?? 3.114}" />
+    </td>
+    <td style="text-align:right;">
+      <button class="ghost del" title="Delete row" style="padding:8px 10px;">✕</button>
+    </td>
+  `;
+  tr.querySelector(".del").addEventListener("click", ()=> tr.remove());
+  return tr;
+}
+function escapeHtml(s){
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+
+function initFuelTable(){
+  els.fuelBody.innerHTML = "";
+  DEFAULT_FUELS.forEach(f => els.fuelBody.appendChild(fuelRowTemplate(f)));
+}
+initFuelTable();
+
+els.addFuel.addEventListener("click", ()=>{
+  els.fuelBody.appendChild(fuelRowTemplate({name:"New fuel", cons:0, cf:3.114}));
+});
+
+function getFuelRows(){
+  const rows = [...els.fuelBody.querySelectorAll("tr")];
+  return rows.map(r => ({
+    name: r.querySelector(".fuel-name").value.trim() || "Fuel",
+    cons: Number(r.querySelector(".fuel-cons").value || 0),
+    cf: Number(r.querySelector(".fuel-cf").value || 0),
+  })).filter(x => x.cons > 0 && x.cf > 0);
+}
+
+function calc(){
+  const st = els.shipType.value;
+  const year = Number(els.year.value);
+  const cap = Number(els.capacity.value);
+  const dist = Number(els.distance.value);
+  const corr = Number(els.corr.value || 1);
+
+  if (!REF[st] || !DD[st] || !Number.isFinite(cap) || cap<=0 || !Number.isFinite(dist) || dist<=0){
+    return {error:"Δώσε έγκυρα ship type / capacity / distance."};
+  }
+
+  // Fuel consumption to tonnes
+  const unit = els.fuelUnit.value;
+  const fuels = getFuelRows();
+  const fuelsTon = fuels.map(f => ({
+    ...f,
+    cons_t: unit === "kg" ? f.cons/1000 : f.cons
+  }));
+
+  // Total CO2 (tonnes): sum(cons_t * CF)
+  const co2_t = fuelsTon.reduce((s,f)=> s + (f.cons_t * f.cf), 0);
+  const co2_g = co2_t * 1e6 * 1e3; // tonnes -> kg -> g  (1 t = 1e6 g? actually 1 t = 1e6 g, so tCO2 * 1e6 g/kg? Wait: 1 t = 1e6 g yes. So t * 1e6 = g.
+  // Correct conversion: 1 tonne = 1,000 kg = 1,000,000 g
+  const co2_g_correct = co2_t * 1_000_000;
+
+  // Attained CII (gCO2 / (capacity * nm)), with optional correction factor multiplier
+  const attained = (co2_g_correct / (cap * dist)) * corr;
+
+  // CII reference line (G2)
+  const {a, c, capAdj} = REF[st].piece(cap);
+  const cii_ref = a * Math.pow(capAdj, -c);
+
+  // Required CII (G3): (100-Z)/100 * CIIref
+  const z = Z(year);
+  const required = cii_ref * (100 - z)/100;
+
+  // Rating
+  const ratio = attained / required;
+  const {d1, d2, d3, d4} = DD[st];
+  let rating = "E", band = `≥ ${d4}`;
+  if (ratio < d1){ rating="A"; band = `< ${d1}`; }
+  else if (ratio < d2){ rating="B"; band = `[${d1}, ${d2})`; }
+  else if (ratio < d3){ rating="C"; band = `[${d2}, ${d3})`; }
+  else if (ratio < d4){ rating="D"; band = `[${d3}, ${d4})`; }
+
+  // Boundaries (in CII units)
+  const bounds = {
+    A: d1*required,
+    B: d2*required,
+    C: d3*required,
+    D: d4*required
+  };
+
+  // Per-fuel CO2 contributions
+  const perFuel = fuelsTon.map(f => ({
+    name: f.name,
+    co2_t: f.cons_t * f.cf
+  })).sort((a,b)=> b.co2_t - a.co2_t);
+
+  return { st, year, cap, dist, corr, fuels: fuelsTon, co2_t, attained, required, ratio, rating, band, z, cii_ref, bounds, perFuel };
+}
+
+/* ---------------------------
+   Charts
+----------------------------*/
+function ensureCharts(){
+  if (!gaugeChart){
+    gaugeChart = echarts.init(document.getElementById("gauge"));
+    barChart   = echarts.init(document.getElementById("bar"));
+    lineChart  = echarts.init(document.getElementById("line"));
+    window.addEventListener("resize", ()=>{ gaugeChart.resize(); barChart.resize(); lineChart.resize(); });
+  }
+}
+
+function ratingColor(r){
+  if (r==="A") return "#2bd576";
+  if (r==="B") return "#62e6b6";
+  if (r==="C") return "#ffcc00";
+  if (r==="D") return "#ff7a57";
+  return "#ff5c7a";
+}
+
+function renderAll(res){
+  ensureCharts();
+
+  // KPIs
+  els.kpiCO2.textContent = `${fmt0(res.co2_t)} tCO₂`;
+  els.kpiAtt.textContent = `${fmt(res.attained, 3)}`;
+  els.kpiReq.textContent = `${fmt(res.required, 3)}`;
+  els.kpiRating.textContent = res.rating;
+  els.kpiRating.style.color = ratingColor(res.rating);
+  els.kpiBand.textContent = `Ratio Att/Req = ${fmt(res.ratio, 3)}  • band ${res.band}`;
+
+  // Gauge: show ratio with colored bands based on dd vectors
+  const dd = DD[res.st];
+  const maxRatio = Math.max(1.6, dd.d4 * 1.15);
+  const segs = [
+    [dd.d1/maxRatio, "#2bd576"],   // A
+    [dd.d2/maxRatio, "#62e6b6"],   // B
+    [dd.d3/maxRatio, "#ffcc00"],   // C
+    [dd.d4/maxRatio, "#ff7a57"],   // D
+    [1,              "#ff5c7a"]    // E
+  ].map(([p,c])=> [clamp(p,0,1), c]);
+
+  gaugeChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { formatter: (p)=> `Attained/Required: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${res.rating}</b>` },
+    series: [{
+      type: "gauge",
+      min: 0,
+      max: maxRatio,
+      splitNumber: 6,
+      axisLine: { lineStyle: { width: 16, color: segs } },
+      pointer: { length: "62%", width: 6 },
+      axisTick: { distance: -14, length: 6 },
+      splitLine: { distance: -14, length: 12 },
+      axisLabel: { distance: 18, color: "rgba(255,255,255,.75)" },
+      title: { show: true, offsetCenter: [0,"68%"], color: "rgba(255,255,255,.75)", fontSize: 12 },
+      detail: { valueAnimation: true, fontSize: 26, offsetCenter: [0,"20%"], color: "rgba(255,255,255,.92)",
+                formatter: (v)=> `${fmt(v,3)}` },
+      data: [{ value: res.ratio, name: "Attained / Required" }]
+    }]
+  });
+
+  // Bar: CO2 per fuel (tonnes)
+  const names = res.perFuel.map(x=>x.name);
+  const values = res.perFuel.map(x=>Number(x.co2_t.toFixed(3)));
+  barChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { trigger:"axis", axisPointer:{ type:"shadow" } },
+    grid: { left: 54, right: 18, top: 18, bottom: 44 },
+    xAxis: {
+      type:"category",
+      data: names,
+      axisLabel: { color:"rgba(255,255,255,.75)", rotate: 22 },
+      axisLine: { lineStyle:{ color:"rgba(255,255,255,.18)" } }
+    },
+    yAxis: {
+      type:"value",
+      axisLabel: { color:"rgba(255,255,255,.75)" },
+      splitLine: { lineStyle:{ color:"rgba(255,255,255,.10)" } }
+    },
+    series: [{
+      type:"bar",
+      data: values,
+      barWidth: "55%",
+      itemStyle: { borderRadius: [10,10,6,6] },
+      emphasis: { focus:"series" }
+    }]
+  });
+
+  // Line: Required across years + fixed Attained
+  const years = [2023,2024,2025,2026,2027,2028,2029,2030];
+  const reqSeries = years.map(y=>{
+    const z = Z(y);
+    const req = res.cii_ref * (100-z)/100;
+    return Number(req.toFixed(4));
+  });
+  const attSeries = years.map(()=> Number(res.attained_toggle ?? res.attained).toFixed(4)).map(Number);
+
+  lineChart.setOption({
+    backgroundColor: "transparent",
+    tooltip: { trigger:"axis" },
+    legend: { top: 10, textStyle: { color:"rgba(255,255,255,.75)" } },
+    grid: { left: 54, right: 18, top: 44, bottom: 40 },
+    xAxis: { type:"category", data: years, axisLabel:{ color:"rgba(255,255,255,.75)" },
+             axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
+    yAxis: { type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
+             splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+    series: [
+      { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:8, lineStyle:{ width:3 } },
+      { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:8, lineStyle:{ width:2, type:"dashed" } },
+    ]
+  });
+}
+
+function run(){
+  const res = calc();
+  if (res.error){
+    alert(res.error);
+    return;
+  }
+  renderAll(res);
+}
+
+els.calcBtn.addEventListener("click", run);
+
+els.demoBtn.addEventListener("click", ()=>{
+  els.shipType.value = "bulk";
+  els.year.value = "2026";
+  els.capacity.value = 62000;
+  els.distance.value = 60045;
+  els.corr.value = 1.00;
+  els.fuelUnit.value = "ton";
+  initFuelTable();
+  run();
+});
+
+els.exportBtn.addEventListener("click", ()=>{
+  ensureCharts();
+  // Export the whole dashboard as 3 PNGs (one per chart)
+  const a = document.createElement("a");
+
+  const g = gaugeChart.getDataURL({ type:"png", pixelRatio: 2, backgroundColor: "#0b1020" });
+  a.href = g; a.download = "cii_gauge.png"; a.click();
+
+  const b = barChart.getDataURL({ type:"png", pixelRatio: 2, backgroundColor: "#0b1020" });
+  a.href = b; a.download = "cii_co2_by_fuel.png"; a.click();
+
+  const l = lineChart.getDataURL({ type:"png", pixelRatio: 2, backgroundColor: "#0b1020" });
+  a.href = l; a.download = "cii_projection.png"; a.click();
+});
+
+// Auto-calc initial
+run();
+</script>
 </body>
 </html>
