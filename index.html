@@ -3,74 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional CII Analytics</title>
+    <title>CII Performance & Strategy Lab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-50 font-sans min-h-screen">
+<body class="bg-white font-sans p-4 md:p-8">
 
-    <nav class="bg-slate-900 text-white p-6 shadow-md">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-tighter italic">MARITIME<span class="text-blue-400 text-2xl">CII</span></h1>
-            <span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-mono">IMO 2026 Compliant</span>
+    <div class="max-w-4xl mx-auto border border-slate-200 rounded-3xl shadow-2xl overflow-hidden">
+        <div class="bg-slate-900 p-8 text-white">
+            <h1 class="text-2xl font-bold tracking-tight uppercase">CII <span class="text-blue-400">Calculator</span></h1>
+            <p class="text-slate-400 text-sm mt-1">Operational Efficiency & Strategy Simulator</p>
         </div>
-    </nav>
 
-    <main class="max-w-6xl mx-auto p-6 grid lg:grid-cols-3 gap-8">
-        
-        <section class="lg:col-span-1 space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-sm font-black uppercase text-slate-400 mb-6 tracking-widest">Vessel Data</h2>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Type</label>
-                        <select id="fuelType" class="w-full p-3 border rounded-xl bg-slate-50 focus:ring-2 focus:ring-blue-500 transition outline-none">
+        <div class="p-8 grid md:grid-cols-2 gap-10 bg-slate-50">
+            <div class="space-y-4">
+                <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Inputs</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold mb-1">Fuel Type</label>
+                        <select id="fuelType" onchange="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200">
                             <option value="3.206">MDO / MGO (3.206)</option>
                             <option value="3.114">HFO (3.114)</option>
-                            <option value="2.750">LNG (2.750)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Capacity (DWT)</label>
-                        <input type="number" id="capacity" value="50000" class="w-full p-3 border rounded-xl bg-slate-50">
+                        <label class="block text-xs font-bold mb-1">DWT Capacity</label>
+                        <input type="number" id="capacity" value="50000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Fuel Consumption (mt)</label>
-                        <input type="number" id="fuel" value="1200" class="w-full p-3 border rounded-xl bg-slate-50">
+                        <label class="block text-xs font-bold mb-1">Fuel (mt)</label>
+                        <input type="number" id="fuel" value="1000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200 text-blue-600 font-bold">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Distance Sailed (nm)</label>
-                        <input type="number" id="distance" value="25000" class="w-full p-3 border rounded-xl bg-slate-50">
-                    </div>
-                    <button onclick="calculate()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-blue-600 transition-all transform active:scale-95 shadow-lg">
-                        GENERATE DIAGRAM
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section class="lg:col-span-2 space-y-6">
-            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 min-h-[450px] flex flex-col items-center justify-center text-center">
-                <h3 class="text-slate-800 font-bold text-lg mb-8">Performance Comparison</h3>
-                
-                <div class="relative w-full max-w-md h-64">
-                    <canvas id="ciiChart"></canvas>
-                </div>
-
-                <div class="mt-8 grid grid-cols-2 gap-10 w-full border-t pt-8">
-                    <div>
-                        <p class="text-[10px] font-black uppercase text-slate-400">Current Rating</p>
-                        <p id="ratingLabel" class="text-5xl font-black text-slate-300">--</p>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-black uppercase text-slate-400">Attained CII</p>
-                        <p id="ciiLabel" class="text-5xl font-mono font-bold text-slate-800">0.00</p>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold mb-1">Distance (nm)</label>
+                        <input type="number" id="distance" value="20000" oninput="calculate()" class="w-full p-3 rounded-xl border-none shadow-sm ring-1 ring-slate-200 text-green-600 font-bold">
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
+
+            <div class="flex flex-col justify-center items-center bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <p class="text-[10px] font-black uppercase text-slate-400">Current 2026 Rating</p>
+                <div id="ratingBox" class="text-8xl font-black my-2">C</div>
+                <p id="ciiVal" class="text-lg font-mono text-slate-500">0.00</p>
+            </div>
+        </div>
+
+        <div class="p-8 border-t border-slate-100">
+            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 text-center">Efficiency Strategy: How to reach Grade A</h2>
+            <div class="h-64">
+                <canvas id="strategyChart"></canvas>
+            </div>
+            <div class="mt-8 grid grid-cols-3 gap-4 text-center">
+                <div class="p-4 bg-blue-50 rounded-xl">
+                    <p class="text-[10px] font-bold text-blue-400 uppercase">Slow Steaming</p>
+                    <p class="text-xs text-blue-900 mt-1">Reduce fuel by 10% to improve rating.</p>
+                </div>
+                <div class="p-4 bg-green-50 rounded-xl">
+                    <p class="text-[10px] font-bold text-green-400 uppercase">Ballast Leg</p>
+                    <p class="text-xs text-green-900 mt-1">Increase distance to lower intensity.</p>
+                </div>
+                <div class="p-4 bg-amber-50 rounded-xl">
+                    <p class="text-[10px] font-bold text-amber-400 uppercase">2030 Risk</p>
+                    <p class="text-xs text-amber-900 mt-1">Stricter limits make this ship a 'D'.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let myChart;
@@ -81,67 +79,63 @@
             const dist = parseFloat(document.getElementById('distance').value);
             const cf = parseFloat(document.getElementById('fuelType').value);
 
-            // 1. Math: Attained CII
             const attained = (fuel * cf * 1000000) / (cap * dist);
-            
-            // 2. Math: Reference Line (Simplified Bulk Carrier example)
-            const refLine = 4745 * Math.pow(cap, -0.622);
-            
-            // 3. Define Rating Thresholds
-            const a_limit = refLine * 0.83;
-            const b_limit = refLine * 0.94;
-            const c_limit = refLine * 1.06;
-            const d_limit = refLine * 1.28;
+            const ref = 4745 * Math.pow(cap, -0.622); // Required C-line
 
-            updateUI(attained, a_limit, b_limit, c_limit, d_limit);
-        }
+            // Boundaries
+            const a = ref * 0.83;
+            const b = ref * 0.94;
+            const c = ref * 1.06;
+            const d = ref * 1.28;
 
-        function updateUI(val, a, b, c, d) {
-            document.getElementById('ciiLabel').innerText = val.toFixed(2);
-            
             let rating = 'E';
-            let color = '#ef4444'; // Red
+            let color = '#ef4444';
+            if (attained <= a) { rating = 'A'; color = '#22c55e'; }
+            else if (attained <= b) { rating = 'B'; color = '#84cc16'; }
+            else if (attained <= c) { rating = 'C'; color = '#eab308'; }
+            else if (attained <= d) { rating = 'D'; color = '#f97316'; }
 
-            if (val <= a) { rating = 'A'; color = '#22c55e'; }
-            else if (val <= b) { rating = 'B'; color = '#4ade80'; }
-            else if (val <= c) { rating = 'C'; color = '#facc15'; }
-            else if (val <= d) { rating = 'D'; color = '#fb923c'; }
+            document.getElementById('ratingBox').innerText = rating;
+            document.getElementById('ratingBox').style.color = color;
+            document.getElementById('ciiVal').innerText = `Attained: ${attained.toFixed(2)}`;
 
-            const label = document.getElementById('ratingLabel');
-            label.innerText = rating;
-            label.style.color = color;
-
-            drawChart(val, a, b, c, d);
+            updateChart(attained, a, b, c);
         }
 
-        function drawChart(val, a, b, c, d) {
-            const ctx = document.getElementById('ciiChart').getContext('2d');
-            
+        function updateChart(current, a, b, c) {
+            const ctx = document.getElementById('strategyChart').getContext('2d');
             if (myChart) myChart.destroy();
 
             myChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: ['A', 'B', 'C', 'D', 'E', 'YOUR SHIP'],
+                    labels: ['Current', '-10% Fuel', '+10% Distance', '2030 Limit'],
                     datasets: [{
-                        label: 'CO2 Intensity',
-                        data: [a, b, c, d, d + 2, val],
-                        backgroundColor: ['#22c55e', '#4ade80', '#facc15', '#fb923c', '#ef4444', '#2563eb'],
-                        borderRadius: 10
+                        label: 'CII Value',
+                        data: [current, current * 0.9, current * 0.91, current], 
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#2563eb'
+                    }, {
+                        label: 'Grade A Target',
+                        data: [a, a, a, a * 0.85], // 2030 is stricter
+                        borderColor: '#22c55e',
+                        borderDash: [5, 5],
+                        fill: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { display: false } }
-                    }
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: false, title: { display: true, text: 'Intensity' } } }
                 }
             });
         }
 
-        // Initial run
         calculate();
     </script>
 </body>
