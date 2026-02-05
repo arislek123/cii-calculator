@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CII Calculator Dashboard</title>
 
-  <!-- ECharts CDN -->
+  <!-- If CDN is blocked, the app still works (without charts). -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
   <style>
@@ -184,7 +184,15 @@
     .chartWrap .chHd .ct{ font-weight:750; }
     .chartWrap .chHd .cd{ color:var(--muted); font-size:12px; margin-top:2px; }
     .chartWrap .chBd{ padding:10px 12px 12px; }
-    .chart{ height:300px; width:100%; }
+    .chart{ height:300px; width:100%; display:flex; align-items:center; justify-content:center; }
+    .chartPlaceholder{
+      border:1px dashed rgba(255,255,255,.18);
+      border-radius:16px;
+      padding:16px 14px;
+      color:rgba(255,255,255,.75);
+      text-align:center;
+      width:100%;
+    }
     .big{ grid-column:1 / span 2; }
     .big .chart{ height:320px; }
 
@@ -218,6 +226,17 @@
       background:rgba(255,92,122,.10);
       color:rgba(255,255,255,.90);
       display:none;
+      white-space:pre-wrap;
+    }
+    .okBanner{
+      max-width:1280px;
+      margin:10px auto 0;
+      padding:10px 16px;
+      border-radius:14px;
+      border:1px solid rgba(43,213,118,.25);
+      background:rgba(43,213,118,.10);
+      color:rgba(255,255,255,.90);
+      display:none;
     }
 
     @media (max-width:1060px){
@@ -240,6 +259,7 @@
 </header>
 
 <div id="errBanner" class="errBanner"></div>
+<div id="okBanner" class="okBanner">JS Loaded OK ✅ (αν δεν βλέπεις charts, πιθανόν το ECharts CDN είναι blocked)</div>
 
 <main>
   <!-- LEFT -->
@@ -279,9 +299,9 @@
           Reporting year
           <select id="year">
             <option>2023</option>
-            <option>2024</option>
+            <option selected>2024</option>
             <option>2025</option>
-            <option selected>2026</option>
+            <option>2026</option>
             <option>2027</option>
             <option>2028</option>
             <option>2029</option>
@@ -309,8 +329,8 @@
         <label>
           Μονάδα consumption
           <select id="fuelUnit">
-            <option value="ton" selected>tonnes (t)</option>
-            <option value="kg">kg</option>
+            <option value="ton">tonnes (t)</option>
+            <option value="kg" selected>kg</option>
           </select>
         </label>
       </div>
@@ -318,11 +338,12 @@
       <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <div>
           <div style="font-weight:750;">Καύσιμα & CF (tCO₂ / t fuel)</div>
-          <div class="mini">Τα fuels γεμίζουν με JS — αν δεις κενό πίνακα, δεν τρέχει το script.</div>
+          <div class="mini">Ο πίνακας είναι ήδη “γεμάτος” (static). Αν τον βλέπεις άδειο, δεν άνοιξες το σωστό αρχείο.</div>
         </div>
         <button class="ghost" id="addFuel" type="button">+ Fuel row</button>
       </div>
 
+      <!-- STATIC default rows in HTML (so you never see an empty table) -->
       <table class="fuel-table">
         <thead>
           <tr>
@@ -332,7 +353,26 @@
             <th style="width:12%;">&nbsp;</th>
           </tr>
         </thead>
-        <tbody id="fuelBody"></tbody>
+        <tbody id="fuelBody">
+          <tr class="fuel-row">
+            <td><input class="rowbox fuel-name" value="HFO" /></td>
+            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="4200000" /></td>
+            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.114" /></td>
+            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
+          </tr>
+          <tr class="fuel-row">
+            <td><input class="rowbox fuel-name" value="MGO/MDO" /></td>
+            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="1300000" /></td>
+            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.206" /></td>
+            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
+          </tr>
+          <tr class="fuel-row">
+            <td><input class="rowbox fuel-name" value="LFO" /></td>
+            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="0" /></td>
+            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.151" /></td>
+            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
+          </tr>
+        </tbody>
       </table>
 
       <div class="btnrow">
@@ -386,7 +426,7 @@
             <div class="ct">Rating Gauge</div>
             <div class="cd">Attained/Required + bands A–E</div>
           </div>
-          <div class="chBd"><div id="gauge" class="chart"></div></div>
+          <div class="chBd"><div id="gauge" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
         </div>
 
         <div class="chartWrap">
@@ -394,7 +434,7 @@
             <div class="ct">CO₂ ανά καύσιμο</div>
             <div class="cd">Όλα τα fuels που υπάρχουν στον πίνακα</div>
           </div>
-          <div class="chBd"><div id="bar" class="chart"></div></div>
+          <div class="chBd"><div id="bar" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
         </div>
 
         <div class="chartWrap">
@@ -402,7 +442,7 @@
             <div class="ct">Grade vs Distance</div>
             <div class="cd">Rating αν αλλάξει η απόσταση (ίδιες εκπομπές)</div>
           </div>
-          <div class="chBd"><div id="gradeDist" class="chart"></div></div>
+          <div class="chBd"><div id="gradeDist" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
         </div>
 
         <div class="chartWrap">
@@ -421,6 +461,7 @@
                 <input id="optPct" type="number" min="0" max="100" step="1" value="30" />
               </label>
             </div>
+
             <div class="mini" id="optTopSuggest">—</div>
 
             <div class="optResults">
@@ -431,7 +472,7 @@
             </div>
 
             <div style="margin-top:10px;">
-              <div id="optChart" class="chart" style="height:220px;"></div>
+              <div id="optChart" class="chart" style="height:220px;"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
             </div>
           </div>
         </div>
@@ -441,7 +482,7 @@
             <div class="ct">Projection αυστηροποίησης</div>
             <div class="cd">Required CII ανά έτος vs σταθερό Attained</div>
           </div>
-          <div class="chBd"><div id="line" class="chart"></div></div>
+          <div class="chBd"><div id="line" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
         </div>
       </div>
     </div>
@@ -449,8 +490,10 @@
 </main>
 
 <script>
-window.addEventListener("DOMContentLoaded", () => {
+(() => {
   const errBanner = document.getElementById("errBanner");
+  const okBanner  = document.getElementById("okBanner");
+
   function showErr(msg){
     errBanner.style.display = "block";
     errBanner.textContent = msg;
@@ -459,47 +502,38 @@ window.addEventListener("DOMContentLoaded", () => {
     errBanner.style.display = "none";
     errBanner.textContent = "";
   }
-
-  // If ECharts didn't load, stop early with a clear message
-  if (typeof window.echarts === "undefined"){
-    showErr("Δεν φορτώθηκε το ECharts (CDN blocked/offline). Επιτρέψτε το cdn.jsdelivr.net ή βάλτε local echarts.min.js.");
-    // Still populate fuels so the page isn't dead
-    try { initFuelTableNoCharts(); } catch(e){}
-    return;
+  function showOK(){
+    okBanner.style.display = "block";
   }
 
-  /* ---------------------------
-     PARAMETERS
-  ----------------------------*/
+  // Make sure JS is running
+  showOK();
+
+  // ---------- Parameters (demo) ----------
   const REF = {
-    bulk:        { capType:"DWT", piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
-    tanker:      { capType:"DWT", piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
-    container:   { capType:"DWT", piece: (cap)=>({a:1984, c:0.489, capAdj: cap}) },
-
-    gas_65p:     { capType:"DWT", piece: (cap)=>({a:1.4405e11, c:2.071, capAdj: cap}) },
-    gas_65m:     { capType:"DWT", piece: (cap)=>({a:8104, c:0.639, capAdj: cap}) },
-
-    general_20p: { capType:"DWT", piece: (cap)=>({a:31948, c:0.792, capAdj: cap}) },
-    general_20m: { capType:"DWT", piece: (cap)=>({a:588, c:0.3885, capAdj: cap}) },
-
-    refrig:      { capType:"DWT", piece: (cap)=>({a:4600, c:0.557, capAdj: cap}) },
-    combo:       { capType:"DWT", piece: (cap)=>({a:5119, c:0.622, capAdj: cap}) },
-
-    lng_100p:    { capType:"DWT", piece: (cap)=>({a:9.827, c:0.0, capAdj: 100000}) },
-    lng_100m:    { capType:"DWT", piece: (cap)=>{
+    bulk:        { piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
+    tanker:      { piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
+    container:   { piece: (cap)=>({a:1984, c:0.489, capAdj: cap}) },
+    gas_65p:     { piece: (cap)=>({a:1.4405e11, c:2.071, capAdj: cap}) },
+    gas_65m:     { piece: (cap)=>({a:8104, c:0.639, capAdj: cap}) },
+    general_20p: { piece: (cap)=>({a:31948, c:0.792, capAdj: cap}) },
+    general_20m: { piece: (cap)=>({a:588, c:0.3885, capAdj: cap}) },
+    refrig:      { piece: (cap)=>({a:4600, c:0.557, capAdj: cap}) },
+    combo:       { piece: (cap)=>({a:5119, c:0.622, capAdj: cap}) },
+    lng_100p:    { piece: (_)=>({a:9.827, c:0.0, capAdj: 100000}) },
+    lng_100m:    { piece: (cap)=>{
                     if (cap >= 65000) return {a:1.4479e14, c:2.673, capAdj: Math.min(cap, 100000)};
                     return {a:1.4479e14, c:2.673, capAdj: 65000};
                   }},
-
-    roro_vc:     { capType:"GT",  piece: (cap)=>{
+    roro_vc:     { piece: (cap)=>{
                     if (cap >= 57700) return {a:3627, c:0.590, capAdj: 57700};
                     if (cap >= 30000) return {a:3627, c:0.590, capAdj: cap};
                     return {a:330, c:0.329, capAdj: cap};
                   }},
-    roro_cargo:  { capType:"GT",  piece: (cap)=>({a:1967, c:0.485, capAdj: cap}) },
-    roro_pax:    { capType:"GT",  piece: (cap)=>({a:2023, c:0.460, capAdj: cap}) },
-    hsc:         { capType:"GT",  piece: (cap)=>({a:4196, c:0.460, capAdj: cap}) },
-    cruise:      { capType:"GT",  piece: (cap)=>({a:930,  c:0.3839, capAdj: cap}) },
+    roro_cargo:  { piece: (cap)=>({a:1967, c:0.485, capAdj: cap}) },
+    roro_pax:    { piece: (cap)=>({a:2023, c:0.460, capAdj: cap}) },
+    cruise:      { piece: (cap)=>({a:930,  c:0.3839, capAdj: cap}) },
+    hsc:         { piece: (cap)=>({a:4196, c:0.460, capAdj: cap}) },
   };
 
   const DD = {
@@ -521,8 +555,8 @@ window.addEventListener("DOMContentLoaded", () => {
     hsc:{d1:0.87,d2:0.95,d3:1.06,d4:1.16},
   };
 
-  function Z(year){
-    const y = Number(year);
+  function Z(y){
+    y = Number(y);
     if (y===2023) return 5;
     if (y===2024) return 7;
     if (y===2025) return 9;
@@ -531,24 +565,15 @@ window.addEventListener("DOMContentLoaded", () => {
     return 11;
   }
 
-  const ALT_FUELS_LIBRARY = [
+  const ALT_LIBRARY = [
     { name:"LNG (indicative)", cf:2.75 },
-    { name:"LPG (indicative)", cf:3.00 },
     { name:"Biofuel blend (indicative)", cf:2.40 },
     { name:"Methanol (indicative)", cf:1.90 },
     { name:"Ammonia (indicative)", cf:0.60 },
-    { name:"Hydrogen (indicative)", cf:0.00 }
+    { name:"Hydrogen (indicative)", cf:0.00 },
   ];
 
-  const DEFAULT_FUELS = [
-    {name:"HFO", cf:3.114, cons:4200},
-    {name:"MGO/MDO", cf:3.206, cons:1300},
-    {name:"LFO", cf:3.151, cons:0},
-  ];
-
-  /* ---------------------------
-     HELPERS
-  ----------------------------*/
+  // ---------- Helpers ----------
   const css = getComputedStyle(document.documentElement);
   const C = {
     A: css.getPropertyValue("--good").trim(),
@@ -561,14 +586,11 @@ window.addEventListener("DOMContentLoaded", () => {
   const roundTo = (n,d=2)=>{ const p=10**d; return Math.round(n*p)/p; };
   const fmt = (n,d=3)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:d, minimumFractionDigits:d}) : "—";
   const fmt0 = (n)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:0}) : "—";
-  const esc = (s)=> String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
   const ratingColor = (r)=> C[r] ?? C.E;
   const ratingToNum = (r)=> ({A:1,B:2,C:3,D:4,E:5})[r] ?? 5;
   const numToRating = (n)=> ({1:"A",2:"B",3:"C",4:"D",5:"E"})[n] ?? "E";
 
-  /* ---------------------------
-     DOM
-  ----------------------------*/
+  // ---------- DOM ----------
   const els = {
     shipType: document.getElementById("shipType"),
     year: document.getElementById("year"),
@@ -597,42 +619,30 @@ window.addEventListener("DOMContentLoaded", () => {
     optCO2: document.getElementById("optCO2"),
   };
 
-  function fuelRowTemplate({name, cons, cf}){
+  function wireRow(tr){
+    const del = tr.querySelector(".del");
+    if (del) del.addEventListener("click", ()=>{ tr.remove(); refreshOptTargets(); run(); });
+    tr.querySelectorAll("input").forEach(inp => inp.addEventListener("input", ()=>{ refreshOptTargets(); run(); }));
+  }
+
+  // wire existing static rows
+  [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
+
+  function newRow(name="New fuel", cons=0, cf=3.114){
     const tr = document.createElement("tr");
     tr.className = "fuel-row";
     tr.innerHTML = `
-      <td><input class="rowbox fuel-name" value="${esc(name)}" /></td>
-      <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons ?? 0}" /></td>
-      <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf ?? 3.114}" /></td>
-      <td style="text-align:right;">
-        <button class="ghost del" type="button" title="Delete row" style="padding:8px 10px;">✕</button>
-      </td>
+      <td><input class="rowbox fuel-name" value="${name.replaceAll('"','&quot;')}" /></td>
+      <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons}" /></td>
+      <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf}" /></td>
+      <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
     `;
-    tr.querySelector(".del").addEventListener("click", ()=>{ tr.remove(); refreshOptimizerTargets(); run(); });
-    tr.querySelectorAll("input").forEach(inp=> inp.addEventListener("input", ()=>{ refreshOptimizerTargets(); run(); }));
+    wireRow(tr);
     return tr;
   }
 
-  function initFuelTable(){
-    els.fuelBody.innerHTML = "";
-    DEFAULT_FUELS.forEach(f=> els.fuelBody.appendChild(fuelRowTemplate(f)));
-    ALT_FUELS_LIBRARY.forEach(f=> els.fuelBody.appendChild(fuelRowTemplate({name:f.name, cf:f.cf, cons:0})));
-  }
-
-  // fallback if echarts missing (kept for completeness)
-  function initFuelTableNoCharts(){
-    const body = document.getElementById("fuelBody");
-    if (!body) return;
-    body.innerHTML = "";
-    DEFAULT_FUELS.forEach(f=>{
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${esc(f.name)}</td><td>${f.cons}</td><td>${f.cf}</td><td></td>`;
-      body.appendChild(tr);
-    });
-  }
-
-  function getAllFuelRows(){
-    return [...els.fuelBody.querySelectorAll("tr")].map(r=>({
+  function getFuels(){
+    return [...els.fuelBody.querySelectorAll("tr")].map(r => ({
       name: (r.querySelector(".fuel-name")?.value || "").trim() || "Fuel",
       cons: Number(r.querySelector(".fuel-cons")?.value || 0),
       cf: Number(r.querySelector(".fuel-cf")?.value || 0),
@@ -641,7 +651,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function consToTon(cons, unit){ return unit==="kg" ? cons/1000 : cons; }
 
-  function computeCO2Tonnes(fuels, unit){
+  function totalCO2t(fuels, unit){
     let co2=0;
     for (const f of fuels){
       const t = consToTon(f.cons, unit);
@@ -650,44 +660,48 @@ window.addEventListener("DOMContentLoaded", () => {
     return co2;
   }
 
-  function computeAttained(co2_t, cap, dist, corr){
+  function attainedCII(co2_t, cap, dist, corr){
     const co2_g = co2_t * 1_000_000;
     return (co2_g/(cap*dist))*corr;
   }
 
-  function computeRequired(shipType, cap, year){
+  function requiredCII(shipType, cap, year){
     const {a,c,capAdj} = REF[shipType].piece(cap);
     const cii_ref = a * Math.pow(capAdj, -c);
-    const z = Z(year);
-    return { required: cii_ref*(100-z)/100, cii_ref };
+    return { cii_ref, required: cii_ref*(100-Z(year))/100 };
   }
 
-  function computeRating(shipType, attained, required){
+  function rating(shipType, attained, required){
     const ratio = attained/required;
     const {d1,d2,d3,d4} = DD[shipType];
-    let rating="E";
-    if (ratio<d1) rating="A";
-    else if (ratio<d2) rating="B";
-    else if (ratio<d3) rating="C";
-    else if (ratio<d4) rating="D";
-    return {rating, ratio, dd:{d1,d2,d3,d4}};
+    let r="E";
+    if (ratio<d1) r="A";
+    else if (ratio<d2) r="B";
+    else if (ratio<d3) r="C";
+    else if (ratio<d4) r="D";
+    return {r, ratio, dd:{d1,d2,d3,d4}};
   }
 
-  // Charts init
-  let gaugeChart, barChart, lineChart, gradeDistChart, optChart;
+  // ---------- Charts (optional) ----------
+  const chartsEnabled = typeof window.echarts !== "undefined";
+  let gaugeChart, barChart, gradeDistChart, optChart, lineChart;
+
   function ensureCharts(){
+    if (!chartsEnabled) return;
     if (gaugeChart) return;
     gaugeChart = echarts.init(document.getElementById("gauge"));
     barChart = echarts.init(document.getElementById("bar"));
-    lineChart = echarts.init(document.getElementById("line"));
     gradeDistChart = echarts.init(document.getElementById("gradeDist"));
     optChart = echarts.init(document.getElementById("optChart"));
+    lineChart = echarts.init(document.getElementById("line"));
     window.addEventListener("resize", ()=>{
-      gaugeChart.resize(); barChart.resize(); lineChart.resize(); gradeDistChart.resize(); optChart.resize();
+      gaugeChart.resize(); barChart.resize(); gradeDistChart.resize(); optChart.resize(); lineChart.resize();
     });
   }
 
-  function renderGauge(ratio, rating, dd){
+  function renderGauge(ratio, r, dd){
+    if (!chartsEnabled) return;
+    ensureCharts();
     const maxRatio = Math.max(1.6, dd.d4*1.15);
     const segs = [
       [dd.d1/maxRatio, ratingColor("A")],
@@ -699,25 +713,23 @@ window.addEventListener("DOMContentLoaded", () => {
 
     gaugeChart.setOption({
       backgroundColor:"transparent",
-      tooltip:{ formatter:(p)=> `Att/Req: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${rating}</b>` },
       series:[{
         type:"gauge",
         min:0, max:maxRatio, splitNumber:6,
         axisLine:{ lineStyle:{ width:16, color:segs } },
         pointer:{ length:"62%", width:6 },
-        axisTick:{ distance:-14, length:6 },
-        splitLine:{ distance:-14, length:12 },
         axisLabel:{ distance:18, color:"rgba(255,255,255,.75)", formatter:(v)=> String(roundTo(v,2)) },
-        title:{ show:true, offsetCenter:[0,"68%"], color:"rgba(255,255,255,.75)", fontSize:12 },
         detail:{ valueAnimation:true, fontSize:26, offsetCenter:[0,"20%"], color:"rgba(255,255,255,.92)", formatter:(v)=> fmt(v,3) },
         data:[{ value: ratio, name:"Attained / Required" }]
       }]
     });
   }
 
-  function renderBarAllFuels(allFuels, unit){
-    const names = allFuels.map(f=>f.name);
-    const values = allFuels.map(f=>{
+  function renderBar(fuels, unit){
+    if (!chartsEnabled) return;
+    ensureCharts();
+    const names = fuels.map(f=>f.name);
+    const values = fuels.map(f=>{
       const t = consToTon(f.cons, unit);
       const co2 = (t>0 && f.cf>0) ? t*f.cf : 0;
       return Number(co2.toFixed(3));
@@ -735,7 +747,41 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderGradeVsDistance(shipType, cap, corr, fuels, unit, required){
+    if (!chartsEnabled) return;
+    ensureCharts();
+    const baseDist = Number(els.distance.value);
+    const co2_t = totalCO2t(fuels, unit);
+    const pts=[];
+    for(let i=0;i<=20;i++){
+      const factor = 0.5 + i*(1/20);
+      const dist = baseDist*factor;
+      const att = attainedCII(co2_t, cap, dist, corr);
+      const rr = rating(shipType, att, required);
+      pts.push({dist:Math.round(dist), rnum:ratingToNum(rr.r), r:rr.r, ratio:rr.ratio});
+    }
+    gradeDistChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis",
+        formatter:(ps)=>{
+          const p = pts[ps[0].dataIndex];
+          return `Distance: <b>${fmt0(p.dist)} nm</b><br/>Rating: <b>${p.r}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
+        }
+      },
+      grid:{ left:70, right:18, top:18, bottom:44 },
+      xAxis:{ type:"category", data:pts.map(p=>p.dist),
+              axisLabel:{ color:"rgba(255,255,255,.75)" },
+              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
+      yAxis:{ type:"value", min:1, max:5, interval:1, inverse:true,
+              axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=>numToRating(v) },
+              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+      series:[{ type:"line", smooth:true, data:pts.map(p=>p.rnum), symbolSize:8, lineStyle:{ width:3 }, areaStyle:{ opacity:0.08 } }]
+    });
+  }
+
   function renderProjection(cii_ref, attained){
+    if (!chartsEnabled) return;
+    ensureCharts();
     const years=[2023,2024,2025,2026,2027,2028,2029,2030];
     const reqSeries = years.map(y=> Number((cii_ref*(100-Z(y))/100).toFixed(4)));
     const attSeries = years.map(()=> Number(attained.toFixed(4)));
@@ -756,107 +802,11 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function renderGradeVsDistance(shipType, year, cap, corr, fuels, unit, required){
-    const baseDist = Number(els.distance.value);
-    const points=[];
-    const co2_t = computeCO2Tonnes(fuels, unit);
-    for(let i=0;i<=20;i++){
-      const factor = 0.5 + i*(1/20);
-      const dist = baseDist*factor;
-      const att = computeAttained(co2_t, cap, dist, corr);
-      const {rating, ratio} = computeRating(shipType, att, required);
-      points.push({dist:Math.round(dist), rnum:ratingToNum(rating), rating, ratio});
-    }
-    gradeDistChart.setOption({
-      backgroundColor:"transparent",
-      tooltip:{ trigger:"axis",
-        formatter:(ps)=>{
-          const p = points[ps[0].dataIndex];
-          return `Distance: <b>${fmt0(p.dist)} nm</b><br/>Rating: <b>${p.rating}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
-        }
-      },
-      grid:{ left:70, right:18, top:18, bottom:44 },
-      xAxis:{ type:"category", data:points.map(p=>p.dist),
-              axisLabel:{ color:"rgba(255,255,255,.75)" },
-              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
-      yAxis:{ type:"value", min:1, max:5, interval:1, inverse:true,
-              axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=>numToRating(v) },
-              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
-      series:[{ type:"line", smooth:true, data:points.map(p=>p.rnum), symbolSize:8, lineStyle:{ width:3 }, areaStyle:{ opacity:0.08 } }]
-    });
-  }
-
-  function optimizerTargets(allFuels){
-    const seen = new Set();
-    const t = [];
-    for (const f of allFuels){
-      const name = (f.name||"").trim();
-      if (!name) continue;
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      if (!Number.isFinite(f.cf) || f.cf<=0) continue;
-      seen.add(key);
-      t.push({name, cf:f.cf});
-    }
-    return t.sort((a,b)=>a.name.localeCompare(b.name));
-  }
-
-  function refreshOptimizerTargets(){
-    const all = getAllFuelRows();
-    const targets = optimizerTargets(all);
-    const prev = els.optTarget.value;
-    els.optTarget.innerHTML = "";
-    for (const x of targets){
-      const o = document.createElement("option");
-      o.value = x.name;
-      o.textContent = `${x.name} (CF ${roundTo(x.cf,3)})`;
-      els.optTarget.appendChild(o);
-    }
-    if (prev && targets.some(x=>x.name===prev)) els.optTarget.value = prev;
-
-    const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
-    els.optTopSuggest.textContent = best.length
-      ? `Καλές εναλλακτικές (χαμηλότερο CF): ` + best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")
-      : "—";
-  }
-
-  function optimizerScenario(allFuels, unit, targetName, pct){
-    const fuels = allFuels.map(f=>({...f}));
-    const p = clamp(Number(pct)/100, 0, 1);
-
-    const targetIdx = fuels.findIndex(f => (f.name||"").trim()===targetName);
-    if (targetIdx<0) return {ok:false};
-
-    const totalT = fuels.reduce((s,f)=> s + Math.max(0, consToTon(f.cons, unit)), 0);
-    if (totalT<=0) return {ok:false};
-
-    const moveT = totalT*p;
-
-    const donors = fuels.map((f,i)=>({i, cf:f.cf, t:Math.max(0, consToTon(f.cons, unit))}))
-      .filter(x=>x.t>0 && Number.isFinite(x.cf) && x.cf>0)
-      .sort((a,b)=>b.cf-a.cf);
-
-    let rem = moveT;
-    for (const d of donors){
-      if (d.i===targetIdx) continue;
-      if (rem<=0) break;
-      const take = Math.min(d.t, rem);
-      const newDonT = d.t - take;
-      fuels[d.i].cons = (unit==="kg") ? newDonT*1000 : newDonT;
-
-      const tgtT = Math.max(0, consToTon(fuels[targetIdx].cons, unit));
-      const newTgtT = tgtT + take;
-      fuels[targetIdx].cons = (unit==="kg") ? newTgtT*1000 : newTgtT;
-
-      rem -= take;
-    }
-    return {ok:true, fuels};
-  }
-
   function renderOptPie(curCO2, newCO2){
+    if (!chartsEnabled) return;
+    ensureCharts();
     optChart.setOption({
       backgroundColor:"transparent",
-      tooltip:{ trigger:"item", formatter:(p)=> `${p.name}: <b>${fmt(p.value,1)} tCO₂</b>` },
       series:[{
         type:"pie",
         radius:["45%","75%"],
@@ -870,106 +820,199 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* ---------------------------
-     MAIN RUN
-  ----------------------------*/
-  function run(){
-    hideErr();
-    ensureCharts();
-
-    const shipType = els.shipType.value;
-    const year = Number(els.year.value);
-    const cap = Number(els.capacity.value);
-    const dist = Number(els.distance.value);
-    const corr = clamp(Number(els.corr.value||1), 0, 10);
-    const unit = els.fuelUnit.value;
-
-    if (!REF[shipType] || !DD[shipType]) return;
-    if (!Number.isFinite(cap) || cap<=0) return;
-    if (!Number.isFinite(dist) || dist<=0) return;
-
-    const allFuels = getAllFuelRows();
-
-    const co2_t = computeCO2Tonnes(allFuels, unit);
-    const attained = computeAttained(co2_t, cap, dist, corr);
-    const {required, cii_ref} = computeRequired(shipType, cap, year);
-    const {rating, ratio, dd} = computeRating(shipType, attained, required);
-
-    els.kpiCO2.textContent = `${fmt0(co2_t)} tCO₂`;
-    els.kpiAtt.textContent = fmt(attained, 3);
-    els.kpiReq.textContent = fmt(required, 3);
-    els.kpiRating.textContent = rating;
-    els.kpiRating.style.color = ratingColor(rating);
-    els.kpiBand.textContent = `Att/Req = ${fmt(ratio,3)}`;
-
-    renderGauge(ratio, rating, dd);
-    renderBarAllFuels(allFuels, unit);
-    renderGradeVsDistance(shipType, year, cap, corr, allFuels, unit, required);
-    renderProjection(cii_ref, attained);
-
-    refreshOptimizerTargets();
-    const target = els.optTarget.value || optimizerTargets(allFuels)[0]?.name || "";
-    const pct = Number(els.optPct.value || 0);
-
-    const scen = optimizerScenario(allFuels, unit, target, pct);
-    if (!scen.ok){
-      els.optCur.textContent = rating;
-      els.optNew.textContent = "—";
-      els.optDelta.textContent = "—";
-      els.optCO2.textContent = "—";
-      renderOptPie(co2_t, co2_t);
-      return;
+  // ---------- Optimizer ----------
+  function buildTargets(fuels){
+    const seen=new Set();
+    const t=[];
+    for (const f of fuels){
+      const name=(f.name||"").trim();
+      if (!name) continue;
+      const key=name.toLowerCase();
+      if (seen.has(key)) continue;
+      if (!Number.isFinite(f.cf) || f.cf<=0) continue;
+      seen.add(key);
+      t.push({name, cf:f.cf});
     }
-
-    const newCO2 = computeCO2Tonnes(scen.fuels, unit);
-    const newAtt = computeAttained(newCO2, cap, dist, corr);
-    const {rating:newRating, ratio:newRatio} = computeRating(shipType, newAtt, required);
-
-    els.optCur.textContent = `${rating} (Att/Req ${fmt(ratio,2)})`;
-    els.optCur.style.color = ratingColor(rating);
-    els.optNew.textContent = `${newRating} (Att/Req ${fmt(newRatio,2)})`;
-    els.optNew.style.color = ratingColor(newRating);
-
-    els.optDelta.textContent = `${(newAtt-attained)>=0?"+":""}${fmt(newAtt-attained,3)}`;
-    els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
-
-    renderOptPie(co2_t, newCO2);
+    return t.sort((a,b)=>a.name.localeCompare(b.name));
   }
 
-  // events
+  function refreshOptTargets(){
+    const fuels = getFuels();
+    // add library (as target options) without touching table
+    const merged = fuels.concat(ALT_LIBRARY.map(x=>({name:x.name, cons:0, cf:x.cf})));
+    const targets = buildTargets(merged);
+    const prev = els.optTarget.value;
+
+    els.optTarget.innerHTML = "";
+    for (const t of targets){
+      const o=document.createElement("option");
+      o.value=t.name;
+      o.textContent=`${t.name} (CF ${roundTo(t.cf,3)})`;
+      els.optTarget.appendChild(o);
+    }
+    if (prev && targets.some(x=>x.name===prev)) els.optTarget.value=prev;
+
+    const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
+    els.optTopSuggest.textContent = best.length
+      ? `Εναλλακτικές χαμηλότερου CF: ` + best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")
+      : "—";
+  }
+
+  function optimizerScenario(fuels, unit, targetName, pct){
+    const p = clamp(Number(pct)/100, 0, 1);
+    const out = fuels.map(f=>({...f}));
+
+    // If target not in table, add it with 0 cons using library CF
+    let targetIdx = out.findIndex(f => (f.name||"").trim()===targetName);
+    if (targetIdx < 0){
+      const lib = ALT_LIBRARY.find(x=>x.name===targetName);
+      if (!lib) return {ok:false};
+      out.push({name:lib.name, cons:0, cf:lib.cf});
+      targetIdx = out.length - 1;
+    }
+
+    const totalT = out.reduce((s,f)=> s + Math.max(0, consToTon(f.cons, unit)), 0);
+    if (totalT <= 0) return {ok:false};
+
+    let moveT = totalT * p;
+
+    const donors = out.map((f,i)=>({i, cf:f.cf, t:Math.max(0, consToTon(f.cons, unit))}))
+      .filter(x=>x.t>0 && Number.isFinite(x.cf) && x.cf>0)
+      .sort((a,b)=>b.cf-a.cf);
+
+    for (const d of donors){
+      if (d.i === targetIdx) continue;
+      if (moveT <= 0) break;
+      const take = Math.min(d.t, moveT);
+
+      const donorNewT = d.t - take;
+      out[d.i].cons = (unit==="kg") ? donorNewT*1000 : donorNewT;
+
+      const tgtT = Math.max(0, consToTon(out[targetIdx].cons, unit));
+      const tgtNewT = tgtT + take;
+      out[targetIdx].cons = (unit==="kg") ? tgtNewT*1000 : tgtNewT;
+
+      moveT -= take;
+    }
+
+    return {ok:true, fuels:out};
+  }
+
+  // ---------- Main ----------
+  function run(){
+    try{
+      hideErr();
+
+      const shipType = els.shipType.value;
+      const year = Number(els.year.value);
+      const cap  = Number(els.capacity.value);
+      const dist = Number(els.distance.value);
+      const corr = clamp(Number(els.corr.value || 1), 0, 10);
+      const unit = els.fuelUnit.value;
+
+      if (!REF[shipType] || !DD[shipType]) throw new Error("Unknown ship type tables.");
+      if (!Number.isFinite(cap) || cap<=0) throw new Error("Capacity must be > 0.");
+      if (!Number.isFinite(dist) || dist<=0) throw new Error("Distance must be > 0.");
+
+      const fuels = getFuels();
+
+      const co2_t = totalCO2t(fuels, unit);
+      const att   = attainedCII(co2_t, cap, dist, corr);
+      const req   = requiredCII(shipType, cap, year);
+      const rr    = rating(shipType, att, req.required);
+
+      // KPIs always (even if charts disabled)
+      els.kpiCO2.textContent = `${fmt0(co2_t)} tCO₂`;
+      els.kpiAtt.textContent = fmt(att,3);
+      els.kpiReq.textContent = fmt(req.required,3);
+      els.kpiRating.textContent = rr.r;
+      els.kpiRating.style.color = ratingColor(rr.r);
+      els.kpiBand.textContent = `Att/Req = ${fmt(rr.ratio,3)}`;
+
+      // Charts (only if echarts is available)
+      renderGauge(rr.ratio, rr.r, rr.dd);
+      renderBar(fuels, unit);
+      renderGradeVsDistance(shipType, cap, corr, fuels, unit, req.required);
+      renderProjection(req.cii_ref, att);
+
+      // Optimizer UI
+      refreshOptTargets();
+      const target = els.optTarget.value || "";
+      const pct = Number(els.optPct.value || 0);
+
+      const scen = optimizerScenario(fuels, unit, target, pct);
+      if (!scen.ok){
+        els.optCur.textContent = rr.r;
+        els.optNew.textContent = "—";
+        els.optDelta.textContent = "—";
+        els.optCO2.textContent = "—";
+        renderOptPie(co2_t, co2_t);
+        return;
+      }
+
+      const newCO2 = totalCO2t(scen.fuels, unit);
+      const newAtt = attainedCII(newCO2, cap, dist, corr);
+      const newRR  = rating(shipType, newAtt, req.required);
+
+      els.optCur.textContent = `${rr.r} (Att/Req ${fmt(rr.ratio,2)})`;
+      els.optCur.style.color = ratingColor(rr.r);
+      els.optNew.textContent = `${newRR.r} (Att/Req ${fmt(newRR.ratio,2)})`;
+      els.optNew.style.color = ratingColor(newRR.r);
+
+      els.optDelta.textContent = `${(newAtt-att)>=0?"+":""}${fmt(newAtt-att,3)}`;
+      els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
+      renderOptPie(co2_t, newCO2);
+
+    } catch(e){
+      showErr("JS Error:\n" + (e && e.message ? e.message : String(e)) + "\n\nΆνοιξε F12 → Console για λεπτομέρειες.");
+      console.error(e);
+    }
+  }
+
+  // ---------- Events ----------
   ["shipType","year","capacity","distance","corr","fuelUnit"].forEach(id=>{
     document.getElementById(id).addEventListener("input", run);
     document.getElementById(id).addEventListener("change", run);
   });
 
-  document.getElementById("addFuel").addEventListener("click", ()=>{
-    els.fuelBody.appendChild(fuelRowTemplate({name:"New fuel", cons:0, cf:3.114}));
-    refreshOptimizerTargets();
+  els.addFuel.addEventListener("click", ()=>{
+    els.fuelBody.appendChild(newRow());
+    refreshOptTargets();
     run();
   });
 
-  document.getElementById("calcBtn").addEventListener("click", run);
+  els.calcBtn.addEventListener("click", run);
 
-  document.getElementById("demoBtn").addEventListener("click", ()=>{
+  els.demoBtn.addEventListener("click", ()=>{
     els.shipType.value="bulk";
     els.year.value="2026";
     els.capacity.value=62000;
     els.distance.value=60045;
     els.corr.value=1.00;
     els.fuelUnit.value="ton";
-    initFuelTable();
-    refreshOptimizerTargets();
+
+    // reset table
+    els.fuelBody.innerHTML = "";
+    els.fuelBody.appendChild(newRow("HFO", 4200, 3.114));
+    els.fuelBody.appendChild(newRow("MGO/MDO", 1300, 3.206));
+    els.fuelBody.appendChild(newRow("LFO", 0, 3.151));
+
+    refreshOptTargets();
     run();
   });
 
-  document.getElementById("optTarget").addEventListener("change", run);
-  document.getElementById("optPct").addEventListener("input", run);
+  els.optTarget.addEventListener("change", run);
+  els.optPct.addEventListener("input", run);
 
-  document.getElementById("exportBtn").addEventListener("click", ()=>{
+  els.exportBtn.addEventListener("click", ()=>{
+    if (!chartsEnabled || !window.echarts){
+      alert("ECharts δεν φορτώθηκε, άρα δεν υπάρχει export PNG.");
+      return;
+    }
     ensureCharts();
     const a=document.createElement("a");
     const bg="#0b1020";
-    const list = [
+    const list=[
       ["cii_gauge.png", gaugeChart],
       ["cii_co2_by_fuel.png", barChart],
       ["cii_grade_vs_distance.png", gradeDistChart],
@@ -982,16 +1025,15 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // init
-  try{
-    initFuelTable();
-    refreshOptimizerTargets();
-    run();
-  } catch(e){
-    showErr("Κάτι πήγε στραβά στο JavaScript. Αν δεις αυτό, πιθανότατα το αρχείο δεν αντιγράφηκε σωστά.");
-    console.error(e);
-  }
-});
+  // ---------- Init ----------
+  // add library targets into dropdown (without forcing them into table)
+  refreshOptTargets();
+  // ensure delete buttons work on static rows
+  [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
+  // initial compute
+  run();
+
+})();
 </script>
 </body>
 </html>
