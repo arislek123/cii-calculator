@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CII Calculator Dashboard</title>
 
-  <!-- ECharts -->
+  <!-- ECharts CDN -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
   <style>
@@ -97,7 +97,6 @@
       background:rgba(0,0,0,.25);
       color:var(--text);
     }
-    input::placeholder{ color:rgba(255,255,255,.40); }
 
     .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
     button{
@@ -177,7 +176,6 @@
       background:rgba(0,0,0,.18);
       border-radius:18px;
       overflow:hidden;
-      box-shadow:none;
     }
     .chartWrap .chHd{
       padding:12px 14px;
@@ -186,7 +184,7 @@
     .chartWrap .chHd .ct{ font-weight:750; }
     .chartWrap .chHd .cd{ color:var(--muted); font-size:12px; margin-top:2px; }
     .chartWrap .chBd{ padding:10px 12px 12px; }
-    .chart{ height:300px; }
+    .chart{ height:300px; width:100%; }
     .big{ grid-column:1 / span 2; }
     .big .chart{ height:320px; }
 
@@ -211,6 +209,17 @@
     .optCard .h{ color:var(--muted); font-size:12px; }
     .optCard .v{ font-weight:850; margin-top:4px; font-size:14px; }
 
+    .errBanner{
+      max-width:1280px;
+      margin:10px auto 0;
+      padding:12px 16px;
+      border-radius:14px;
+      border:1px solid rgba(255,92,122,.35);
+      background:rgba(255,92,122,.10);
+      color:rgba(255,255,255,.90);
+      display:none;
+    }
+
     @media (max-width:1060px){
       main{ grid-template-columns:1fr; }
       .charts{ grid-template-columns:1fr; }
@@ -222,9 +231,7 @@
 
 <body>
 <header>
-  <div>
-    <h1>CII Dashboard — Attained / Required / Rating</h1>
-  </div>
+  <div><h1>CII Dashboard — Attained / Required / Rating</h1></div>
   <div class="pillrow">
     <div class="pill">Μονάδα: <strong>gCO₂ / (capacity·nm)</strong></div>
     <div class="pill">Capacity: <strong>DWT ή GT</strong></div>
@@ -232,8 +239,10 @@
   </div>
 </header>
 
+<div id="errBanner" class="errBanner"></div>
+
 <main>
-  <!-- LEFT: Inputs -->
+  <!-- LEFT -->
   <section class="card">
     <div class="hd">
       <div>
@@ -309,9 +318,9 @@
       <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <div>
           <div style="font-weight:750;">Καύσιμα & CF (tCO₂ / t fuel)</div>
-          <div class="mini">Όλα τα fuels εμφανίζονται στα charts (ακόμα κι αν είναι 0).</div>
+          <div class="mini">Τα fuels γεμίζουν με JS — αν δεις κενό πίνακα, δεν τρέχει το script.</div>
         </div>
-        <button class="ghost" id="addFuel">+ Fuel row</button>
+        <button class="ghost" id="addFuel" type="button">+ Fuel row</button>
       </div>
 
       <table class="fuel-table">
@@ -327,9 +336,9 @@
       </table>
 
       <div class="btnrow">
-        <button id="calcBtn">Υπολόγισε</button>
-        <button class="ghost" id="demoBtn">Demo</button>
-        <button class="ghost" id="exportBtn">Export charts PNG</button>
+        <button id="calcBtn" type="button">Υπολόγισε</button>
+        <button class="ghost" id="demoBtn" type="button">Demo</button>
+        <button class="ghost" id="exportBtn" type="button">Export charts PNG</button>
       </div>
 
       <div class="hintbox">
@@ -338,12 +347,12 @@
     </div>
   </section>
 
-  <!-- RIGHT: Results + Charts -->
+  <!-- RIGHT -->
   <section class="card">
     <div class="hd">
       <div>
         <div class="t">Αποτελέσματα & Διαγράμματα</div>
-        <div class="d">Gauge, CO₂ breakdown, projection, grade-vs-distance, optimizer</div>
+        <div class="d">Gauge, CO₂ breakdown, grade-vs-distance, optimizer, projection</div>
       </div>
     </div>
 
@@ -375,7 +384,7 @@
         <div class="chartWrap">
           <div class="chHd">
             <div class="ct">Rating Gauge</div>
-            <div class="cd">Attained/Required + bands A–E (χωρίς άσχημα δεκαδικά)</div>
+            <div class="cd">Attained/Required + bands A–E</div>
           </div>
           <div class="chBd"><div id="gauge" class="chart"></div></div>
         </div>
@@ -383,7 +392,7 @@
         <div class="chartWrap">
           <div class="chHd">
             <div class="ct">CO₂ ανά καύσιμο</div>
-            <div class="cd">Εμφανίζει όλα τα fuels που υπάρχουν στον πίνακα</div>
+            <div class="cd">Όλα τα fuels που υπάρχουν στον πίνακα</div>
           </div>
           <div class="chBd"><div id="bar" class="chart"></div></div>
         </div>
@@ -391,7 +400,7 @@
         <div class="chartWrap">
           <div class="chHd">
             <div class="ct">Grade vs Distance</div>
-            <div class="cd">Πώς αλλάζει το rating αν αλλάξει η απόσταση (ίδιες εκπομπές)</div>
+            <div class="cd">Rating αν αλλάξει η απόσταση (ίδιες εκπομπές)</div>
           </div>
           <div class="chBd"><div id="gradeDist" class="chart"></div></div>
         </div>
@@ -399,39 +408,26 @@
         <div class="chartWrap">
           <div class="chHd">
             <div class="ct">Fuel Switch Optimizer</div>
-            <div class="cd">Προτάσεις εναλλακτικών + “what-if” αλλαγή μίγματος καυσίμων</div>
+            <div class="cd">What-if αλλαγή μίγματος καυσίμων</div>
           </div>
           <div class="chBd">
             <div class="optBox">
               <label>
-                Στόχος καυσίμου (για μεταφορά ποσοστού)
+                Στόχος καυσίμου
                 <select id="optTarget"></select>
               </label>
               <label>
-                Μεταφορά % από “χειρότερα CF” προς στόχο
+                Μεταφορά % προς στόχο
                 <input id="optPct" type="number" min="0" max="100" step="1" value="30" />
               </label>
             </div>
-
             <div class="mini" id="optTopSuggest">—</div>
 
             <div class="optResults">
-              <div class="optCard">
-                <div class="h">Current rating</div>
-                <div class="v" id="optCur">—</div>
-              </div>
-              <div class="optCard">
-                <div class="h">After switch rating</div>
-                <div class="v" id="optNew">—</div>
-              </div>
-              <div class="optCard">
-                <div class="h">Δ Attained CII</div>
-                <div class="v" id="optDelta">—</div>
-              </div>
-              <div class="optCard">
-                <div class="h">CO₂ change</div>
-                <div class="v" id="optCO2">—</div>
-              </div>
+              <div class="optCard"><div class="h">Current rating</div><div class="v" id="optCur">—</div></div>
+              <div class="optCard"><div class="h">After switch rating</div><div class="v" id="optNew">—</div></div>
+              <div class="optCard"><div class="h">Δ Attained CII</div><div class="v" id="optDelta">—</div></div>
+              <div class="optCard"><div class="h">CO₂ change</div><div class="v" id="optCO2">—</div></div>
             </div>
 
             <div style="margin-top:10px;">
@@ -453,266 +449,234 @@
 </main>
 
 <script>
-/* ---------------------------
-   PARAMETERS (demo implementation)
-----------------------------*/
-
-// Reference line: CII_ref = a * (Capacity)^(-c), with some piecewise caps.
-const REF = {
-  bulk:        { capType:"DWT", piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
-  tanker:      { capType:"DWT", piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
-  container:   { capType:"DWT", piece: (cap)=>({a:1984, c:0.489, capAdj: cap}) },
-
-  gas_65p:     { capType:"DWT", piece: (cap)=>({a:1.4405e11, c:2.071, capAdj: cap}) },
-  gas_65m:     { capType:"DWT", piece: (cap)=>({a:8104, c:0.639, capAdj: cap}) },
-
-  general_20p: { capType:"DWT", piece: (cap)=>({a:31948, c:0.792, capAdj: cap}) },
-  general_20m: { capType:"DWT", piece: (cap)=>({a:588, c:0.3885, capAdj: cap}) },
-
-  refrig:      { capType:"DWT", piece: (cap)=>({a:4600, c:0.557, capAdj: cap}) },
-  combo:       { capType:"DWT", piece: (cap)=>({a:5119, c:0.622, capAdj: cap}) },
-
-  lng_100p:    { capType:"DWT", piece: (cap)=>({a:9.827, c:0.0, capAdj: 100000}) },
-  lng_100m:    { capType:"DWT", piece: (cap)=>{
-                  if (cap >= 65000){
-                    return {a:1.4479e14, c:2.673, capAdj: Math.min(cap, 100000)};
-                  }
-                  return {a:1.4479e14, c:2.673, capAdj: 65000};
-                }},
-
-  roro_vc:     { capType:"GT",  piece: (cap)=>{
-                  if (cap >= 57700) return {a:3627, c:0.590, capAdj: 57700};
-                  if (cap >= 30000) return {a:3627, c:0.590, capAdj: cap};
-                  return {a:330, c:0.329, capAdj: cap};
-                }},
-  roro_cargo:  { capType:"GT",  piece: (cap)=>({a:1967, c:0.485, capAdj: cap}) },
-  roro_pax:    { capType:"GT",  piece: (cap)=>({a:2023, c:0.460, capAdj: cap}) },
-  hsc:         { capType:"GT",  piece: (cap)=>({a:4196, c:0.460, capAdj: cap}) },
-  cruise:      { capType:"GT",  piece: (cap)=>({a:930,  c:0.3839, capAdj: cap}) },
-};
-
-// dd vectors (multipliers). Rating via ratio = Attained/Required
-const DD = {
-  bulk:        {d1:0.86, d2:0.94, d3:1.06, d4:1.18},
-  tanker:      {d1:0.82, d2:0.93, d3:1.08, d4:1.28},
-  container:   {d1:0.83, d2:0.94, d3:1.07, d4:1.19},
-  gas_65p:     {d1:0.81, d2:0.91, d3:1.12, d4:1.44},
-  gas_65m:     {d1:0.85, d2:0.95, d3:1.06, d4:1.25},
-  general_20p: {d1:0.83, d2:0.94, d3:1.06, d4:1.19},
-  general_20m: {d1:0.83, d2:0.94, d3:1.06, d4:1.19},
-  refrig:      {d1:0.78, d2:0.91, d3:1.07, d4:1.20},
-  combo:       {d1:0.87, d2:0.96, d3:1.06, d4:1.14},
-  lng_100p:    {d1:0.89, d2:0.98, d3:1.06, d4:1.13},
-  lng_100m:    {d1:0.78, d2:0.92, d3:1.10, d4:1.37},
-  roro_vc:     {d1:0.86, d2:0.94, d3:1.06, d4:1.16},
-  roro_cargo:  {d1:0.76, d2:0.89, d3:1.08, d4:1.27},
-  roro_pax:    {d1:0.76, d2:0.92, d3:1.14, d4:1.30},
-  cruise:      {d1:0.87, d2:0.95, d3:1.06, d4:1.16},
-  hsc:         {d1:0.87, d2:0.95, d3:1.06, d4:1.16},
-};
-
-// Z reduction factor (demo)
-function Z(year){
-  const y = Number(year);
-  if (y === 2023) return 5;
-  if (y === 2024) return 7;
-  if (y === 2025) return 9;
-  if (y === 2026) return 11;
-  if (y >= 2027 && y <= 2030) return 5 + 2*(y-2023);
-  return 11;
-}
-
-/* Suggested alternative fuels (editable library).
-   These are "scenario helpers" for the optimizer; you can change CFs to your official factors. */
-const ALT_FUELS_LIBRARY = [
-  { name: "LNG (indicative)", cf: 2.75 },
-  { name: "LPG (indicative)", cf: 3.00 },
-  { name: "Biofuel blend (indicative)", cf: 2.40 },
-  { name: "Methanol (indicative)", cf: 1.90 },
-  { name: "Ammonia (indicative)", cf: 0.60 },
-  { name: "Hydrogen (indicative)", cf: 0.00 }
-];
-
-// Default table rows
-const DEFAULT_FUELS = [
-  {name:"HFO",  cf:3.114, cons: 4200},
-  {name:"MGO/MDO", cf:3.206, cons: 1300},
-  {name:"LFO",  cf:3.151, cons: 0},
-];
-
-/* ---------------------------
-   HELPERS
-----------------------------*/
-function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
-function roundTo(n, d=2){
-  if (!Number.isFinite(n)) return n;
-  const p = Math.pow(10,d);
-  return Math.round(n*p)/p;
-}
-function fmt(n, d=3){
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("el-GR", {maximumFractionDigits:d, minimumFractionDigits:d});
-}
-function fmt0(n){
-  if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("el-GR", {maximumFractionDigits:0});
-}
-function escapeHtml(s){
-  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-}
-function ratingColor(r){
-  if (r==="A") return getComputedStyle(document.documentElement).getPropertyValue('--good').trim();
-  if (r==="B") return getComputedStyle(document.documentElement).getPropertyValue('--good2').trim();
-  if (r==="C") return getComputedStyle(document.documentElement).getPropertyValue('--warn').trim();
-  if (r==="D") return getComputedStyle(document.documentElement).getPropertyValue('--bad2').trim();
-  return getComputedStyle(document.documentElement).getPropertyValue('--bad').trim();
-}
-function ratingToNum(r){
-  // for plotting: A=1 ... E=5
-  return ({A:1,B:2,C:3,D:4,E:5})[r] ?? 5;
-}
-function numToRating(n){
-  return ({1:"A",2:"B",3:"C",4:"D",5:"E"})[n] ?? "E";
-}
-
-/* ---------------------------
-   DOM
-----------------------------*/
-const els = {
-  shipType: document.getElementById("shipType"),
-  year: document.getElementById("year"),
-  capacity: document.getElementById("capacity"),
-  distance: document.getElementById("distance"),
-  corr: document.getElementById("corr"),
-  fuelUnit: document.getElementById("fuelUnit"),
-  fuelBody: document.getElementById("fuelBody"),
-  addFuel: document.getElementById("addFuel"),
-  calcBtn: document.getElementById("calcBtn"),
-  demoBtn: document.getElementById("demoBtn"),
-  exportBtn: document.getElementById("exportBtn"),
-
-  kpiCO2: document.getElementById("kpiCO2"),
-  kpiAtt: document.getElementById("kpiAtt"),
-  kpiReq: document.getElementById("kpiReq"),
-  kpiRating: document.getElementById("kpiRating"),
-  kpiBand: document.getElementById("kpiBand"),
-
-  optTarget: document.getElementById("optTarget"),
-  optPct: document.getElementById("optPct"),
-  optTopSuggest: document.getElementById("optTopSuggest"),
-  optCur: document.getElementById("optCur"),
-  optNew: document.getElementById("optNew"),
-  optDelta: document.getElementById("optDelta"),
-  optCO2: document.getElementById("optCO2"),
-};
-
-function fuelRowTemplate({name, cons, cf}){
-  const tr = document.createElement("tr");
-  tr.className = "fuel-row";
-  tr.innerHTML = `
-    <td><input class="rowbox fuel-name" value="${escapeHtml(name)}" /></td>
-    <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons ?? 0}" /></td>
-    <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf ?? 3.114}" /></td>
-    <td style="text-align:right;">
-      <button class="ghost del" title="Delete row" style="padding:8px 10px;">✕</button>
-    </td>
-  `;
-  tr.querySelector(".del").addEventListener("click", ()=>{ tr.remove(); run(); refreshOptimizerTargets(); });
-  // auto-recalc on edit
-  tr.querySelectorAll("input").forEach(inp => inp.addEventListener("input", ()=>{ run(); refreshOptimizerTargets(); }));
-  return tr;
-}
-function initFuelTable(){
-  els.fuelBody.innerHTML = "";
-  DEFAULT_FUELS.forEach(f => els.fuelBody.appendChild(fuelRowTemplate(f)));
-  // add library items (0 consumption) so they can appear / be used in optimizer
-  ALT_FUELS_LIBRARY.forEach(f => els.fuelBody.appendChild(fuelRowTemplate({name:f.name, cf:f.cf, cons:0})));
-}
-initFuelTable();
-
-els.addFuel.addEventListener("click", ()=>{
-  els.fuelBody.appendChild(fuelRowTemplate({name:"New fuel", cons:0, cf:3.114}));
-  refreshOptimizerTargets();
-  run();
-});
-
-// Global input listeners
-["shipType","year","capacity","distance","corr","fuelUnit"].forEach(id=>{
-  document.getElementById(id).addEventListener("input", ()=>{ run(); });
-  document.getElementById(id).addEventListener("change", ()=>{ run(); });
-});
-
-els.demoBtn.addEventListener("click", ()=>{
-  els.shipType.value = "bulk";
-  els.year.value = "2026";
-  els.capacity.value = 62000;
-  els.distance.value = 60045;
-  els.corr.value = 1.00;
-  els.fuelUnit.value = "ton";
-  initFuelTable();
-  refreshOptimizerTargets();
-  run();
-});
-
-els.calcBtn.addEventListener("click", run);
-
-/* ---------------------------
-   DATA EXTRACT
-----------------------------*/
-function getAllFuelRows(){
-  const rows = [...els.fuelBody.querySelectorAll("tr")];
-  return rows.map(r => ({
-    name: (r.querySelector(".fuel-name").value.trim() || "Fuel"),
-    cons: Number(r.querySelector(".fuel-cons").value || 0),
-    cf: Number(r.querySelector(".fuel-cf").value || 0),
-  }));
-}
-
-function normalizeFuelConsToTon(cons, unit){
-  return unit === "kg" ? cons/1000 : cons;
-}
-
-function computeCO2Tonnes(fuels, unit){
-  // include only valid numeric CF and consumption
-  let co2_t = 0;
-  for (const f of fuels){
-    const cons_t = normalizeFuelConsToTon(f.cons, unit);
-    if (cons_t > 0 && f.cf > 0) co2_t += cons_t * f.cf;
+window.addEventListener("DOMContentLoaded", () => {
+  const errBanner = document.getElementById("errBanner");
+  function showErr(msg){
+    errBanner.style.display = "block";
+    errBanner.textContent = msg;
   }
-  return co2_t;
-}
+  function hideErr(){
+    errBanner.style.display = "none";
+    errBanner.textContent = "";
+  }
 
-function computeAttainedCII(co2_t, cap, dist, corr){
-  const co2_g = co2_t * 1_000_000; // t -> g
-  return (co2_g / (cap * dist)) * corr;
-}
+  // If ECharts didn't load, stop early with a clear message
+  if (typeof window.echarts === "undefined"){
+    showErr("Δεν φορτώθηκε το ECharts (CDN blocked/offline). Επιτρέψτε το cdn.jsdelivr.net ή βάλτε local echarts.min.js.");
+    // Still populate fuels so the page isn't dead
+    try { initFuelTableNoCharts(); } catch(e){}
+    return;
+  }
 
-function computeRequiredCII(shipType, cap, year){
-  const {a, c, capAdj} = REF[shipType].piece(cap);
-  const cii_ref = a * Math.pow(capAdj, -c);
-  const z = Z(year);
-  const required = cii_ref * (100 - z)/100;
-  return { required, cii_ref, z };
-}
+  /* ---------------------------
+     PARAMETERS
+  ----------------------------*/
+  const REF = {
+    bulk:        { capType:"DWT", piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
+    tanker:      { capType:"DWT", piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
+    container:   { capType:"DWT", piece: (cap)=>({a:1984, c:0.489, capAdj: cap}) },
 
-function computeRating(shipType, attained, required){
-  const ratio = attained / required;
-  const {d1,d2,d3,d4} = DD[shipType];
-  let rating = "E";
-  if (ratio < d1) rating="A";
-  else if (ratio < d2) rating="B";
-  else if (ratio < d3) rating="C";
-  else if (ratio < d4) rating="D";
-  return { rating, ratio, dd:{d1,d2,d3,d4} };
-}
+    gas_65p:     { capType:"DWT", piece: (cap)=>({a:1.4405e11, c:2.071, capAdj: cap}) },
+    gas_65m:     { capType:"DWT", piece: (cap)=>({a:8104, c:0.639, capAdj: cap}) },
 
-/* ---------------------------
-   CHARTS
-----------------------------*/
-let gaugeChart, barChart, lineChart, gradeDistChart, optChart;
+    general_20p: { capType:"DWT", piece: (cap)=>({a:31948, c:0.792, capAdj: cap}) },
+    general_20m: { capType:"DWT", piece: (cap)=>({a:588, c:0.3885, capAdj: cap}) },
 
-function ensureCharts(){
-  if (!gaugeChart){
+    refrig:      { capType:"DWT", piece: (cap)=>({a:4600, c:0.557, capAdj: cap}) },
+    combo:       { capType:"DWT", piece: (cap)=>({a:5119, c:0.622, capAdj: cap}) },
+
+    lng_100p:    { capType:"DWT", piece: (cap)=>({a:9.827, c:0.0, capAdj: 100000}) },
+    lng_100m:    { capType:"DWT", piece: (cap)=>{
+                    if (cap >= 65000) return {a:1.4479e14, c:2.673, capAdj: Math.min(cap, 100000)};
+                    return {a:1.4479e14, c:2.673, capAdj: 65000};
+                  }},
+
+    roro_vc:     { capType:"GT",  piece: (cap)=>{
+                    if (cap >= 57700) return {a:3627, c:0.590, capAdj: 57700};
+                    if (cap >= 30000) return {a:3627, c:0.590, capAdj: cap};
+                    return {a:330, c:0.329, capAdj: cap};
+                  }},
+    roro_cargo:  { capType:"GT",  piece: (cap)=>({a:1967, c:0.485, capAdj: cap}) },
+    roro_pax:    { capType:"GT",  piece: (cap)=>({a:2023, c:0.460, capAdj: cap}) },
+    hsc:         { capType:"GT",  piece: (cap)=>({a:4196, c:0.460, capAdj: cap}) },
+    cruise:      { capType:"GT",  piece: (cap)=>({a:930,  c:0.3839, capAdj: cap}) },
+  };
+
+  const DD = {
+    bulk:{d1:0.86,d2:0.94,d3:1.06,d4:1.18},
+    tanker:{d1:0.82,d2:0.93,d3:1.08,d4:1.28},
+    container:{d1:0.83,d2:0.94,d3:1.07,d4:1.19},
+    gas_65p:{d1:0.81,d2:0.91,d3:1.12,d4:1.44},
+    gas_65m:{d1:0.85,d2:0.95,d3:1.06,d4:1.25},
+    general_20p:{d1:0.83,d2:0.94,d3:1.06,d4:1.19},
+    general_20m:{d1:0.83,d2:0.94,d3:1.06,d4:1.19},
+    refrig:{d1:0.78,d2:0.91,d3:1.07,d4:1.20},
+    combo:{d1:0.87,d2:0.96,d3:1.06,d4:1.14},
+    lng_100p:{d1:0.89,d2:0.98,d3:1.06,d4:1.13},
+    lng_100m:{d1:0.78,d2:0.92,d3:1.10,d4:1.37},
+    roro_vc:{d1:0.86,d2:0.94,d3:1.06,d4:1.16},
+    roro_cargo:{d1:0.76,d2:0.89,d3:1.08,d4:1.27},
+    roro_pax:{d1:0.76,d2:0.92,d3:1.14,d4:1.30},
+    cruise:{d1:0.87,d2:0.95,d3:1.06,d4:1.16},
+    hsc:{d1:0.87,d2:0.95,d3:1.06,d4:1.16},
+  };
+
+  function Z(year){
+    const y = Number(year);
+    if (y===2023) return 5;
+    if (y===2024) return 7;
+    if (y===2025) return 9;
+    if (y===2026) return 11;
+    if (y>=2027 && y<=2030) return 5 + 2*(y-2023);
+    return 11;
+  }
+
+  const ALT_FUELS_LIBRARY = [
+    { name:"LNG (indicative)", cf:2.75 },
+    { name:"LPG (indicative)", cf:3.00 },
+    { name:"Biofuel blend (indicative)", cf:2.40 },
+    { name:"Methanol (indicative)", cf:1.90 },
+    { name:"Ammonia (indicative)", cf:0.60 },
+    { name:"Hydrogen (indicative)", cf:0.00 }
+  ];
+
+  const DEFAULT_FUELS = [
+    {name:"HFO", cf:3.114, cons:4200},
+    {name:"MGO/MDO", cf:3.206, cons:1300},
+    {name:"LFO", cf:3.151, cons:0},
+  ];
+
+  /* ---------------------------
+     HELPERS
+  ----------------------------*/
+  const css = getComputedStyle(document.documentElement);
+  const C = {
+    A: css.getPropertyValue("--good").trim(),
+    B: css.getPropertyValue("--good2").trim(),
+    C: css.getPropertyValue("--warn").trim(),
+    D: css.getPropertyValue("--bad2").trim(),
+    E: css.getPropertyValue("--bad").trim(),
+  };
+  const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+  const roundTo = (n,d=2)=>{ const p=10**d; return Math.round(n*p)/p; };
+  const fmt = (n,d=3)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:d, minimumFractionDigits:d}) : "—";
+  const fmt0 = (n)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:0}) : "—";
+  const esc = (s)=> String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  const ratingColor = (r)=> C[r] ?? C.E;
+  const ratingToNum = (r)=> ({A:1,B:2,C:3,D:4,E:5})[r] ?? 5;
+  const numToRating = (n)=> ({1:"A",2:"B",3:"C",4:"D",5:"E"})[n] ?? "E";
+
+  /* ---------------------------
+     DOM
+  ----------------------------*/
+  const els = {
+    shipType: document.getElementById("shipType"),
+    year: document.getElementById("year"),
+    capacity: document.getElementById("capacity"),
+    distance: document.getElementById("distance"),
+    corr: document.getElementById("corr"),
+    fuelUnit: document.getElementById("fuelUnit"),
+    fuelBody: document.getElementById("fuelBody"),
+    addFuel: document.getElementById("addFuel"),
+    calcBtn: document.getElementById("calcBtn"),
+    demoBtn: document.getElementById("demoBtn"),
+    exportBtn: document.getElementById("exportBtn"),
+
+    kpiCO2: document.getElementById("kpiCO2"),
+    kpiAtt: document.getElementById("kpiAtt"),
+    kpiReq: document.getElementById("kpiReq"),
+    kpiRating: document.getElementById("kpiRating"),
+    kpiBand: document.getElementById("kpiBand"),
+
+    optTarget: document.getElementById("optTarget"),
+    optPct: document.getElementById("optPct"),
+    optTopSuggest: document.getElementById("optTopSuggest"),
+    optCur: document.getElementById("optCur"),
+    optNew: document.getElementById("optNew"),
+    optDelta: document.getElementById("optDelta"),
+    optCO2: document.getElementById("optCO2"),
+  };
+
+  function fuelRowTemplate({name, cons, cf}){
+    const tr = document.createElement("tr");
+    tr.className = "fuel-row";
+    tr.innerHTML = `
+      <td><input class="rowbox fuel-name" value="${esc(name)}" /></td>
+      <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons ?? 0}" /></td>
+      <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf ?? 3.114}" /></td>
+      <td style="text-align:right;">
+        <button class="ghost del" type="button" title="Delete row" style="padding:8px 10px;">✕</button>
+      </td>
+    `;
+    tr.querySelector(".del").addEventListener("click", ()=>{ tr.remove(); refreshOptimizerTargets(); run(); });
+    tr.querySelectorAll("input").forEach(inp=> inp.addEventListener("input", ()=>{ refreshOptimizerTargets(); run(); }));
+    return tr;
+  }
+
+  function initFuelTable(){
+    els.fuelBody.innerHTML = "";
+    DEFAULT_FUELS.forEach(f=> els.fuelBody.appendChild(fuelRowTemplate(f)));
+    ALT_FUELS_LIBRARY.forEach(f=> els.fuelBody.appendChild(fuelRowTemplate({name:f.name, cf:f.cf, cons:0})));
+  }
+
+  // fallback if echarts missing (kept for completeness)
+  function initFuelTableNoCharts(){
+    const body = document.getElementById("fuelBody");
+    if (!body) return;
+    body.innerHTML = "";
+    DEFAULT_FUELS.forEach(f=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${esc(f.name)}</td><td>${f.cons}</td><td>${f.cf}</td><td></td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  function getAllFuelRows(){
+    return [...els.fuelBody.querySelectorAll("tr")].map(r=>({
+      name: (r.querySelector(".fuel-name")?.value || "").trim() || "Fuel",
+      cons: Number(r.querySelector(".fuel-cons")?.value || 0),
+      cf: Number(r.querySelector(".fuel-cf")?.value || 0),
+    }));
+  }
+
+  function consToTon(cons, unit){ return unit==="kg" ? cons/1000 : cons; }
+
+  function computeCO2Tonnes(fuels, unit){
+    let co2=0;
+    for (const f of fuels){
+      const t = consToTon(f.cons, unit);
+      if (t>0 && f.cf>0) co2 += t*f.cf;
+    }
+    return co2;
+  }
+
+  function computeAttained(co2_t, cap, dist, corr){
+    const co2_g = co2_t * 1_000_000;
+    return (co2_g/(cap*dist))*corr;
+  }
+
+  function computeRequired(shipType, cap, year){
+    const {a,c,capAdj} = REF[shipType].piece(cap);
+    const cii_ref = a * Math.pow(capAdj, -c);
+    const z = Z(year);
+    return { required: cii_ref*(100-z)/100, cii_ref };
+  }
+
+  function computeRating(shipType, attained, required){
+    const ratio = attained/required;
+    const {d1,d2,d3,d4} = DD[shipType];
+    let rating="E";
+    if (ratio<d1) rating="A";
+    else if (ratio<d2) rating="B";
+    else if (ratio<d3) rating="C";
+    else if (ratio<d4) rating="D";
+    return {rating, ratio, dd:{d1,d2,d3,d4}};
+  }
+
+  // Charts init
+  let gaugeChart, barChart, lineChart, gradeDistChart, optChart;
+  function ensureCharts(){
+    if (gaugeChart) return;
     gaugeChart = echarts.init(document.getElementById("gauge"));
     barChart = echarts.init(document.getElementById("bar"));
     lineChart = echarts.init(document.getElementById("line"));
@@ -722,226 +686,312 @@ function ensureCharts(){
       gaugeChart.resize(); barChart.resize(); lineChart.resize(); gradeDistChart.resize(); optChart.resize();
     });
   }
-}
 
-function renderGauge({ratio, rating, dd}){
-  const maxRatio = Math.max(1.6, dd.d4 * 1.15);
-  const segs = [
-    [dd.d1/maxRatio, ratingColor("A")],
-    [dd.d2/maxRatio, ratingColor("B")],
-    [dd.d3/maxRatio, ratingColor("C")],
-    [dd.d4/maxRatio, ratingColor("D")],
-    [1,             ratingColor("E")]
-  ].map(([p,c])=> [clamp(p,0,1), c]);
+  function renderGauge(ratio, rating, dd){
+    const maxRatio = Math.max(1.6, dd.d4*1.15);
+    const segs = [
+      [dd.d1/maxRatio, ratingColor("A")],
+      [dd.d2/maxRatio, ratingColor("B")],
+      [dd.d3/maxRatio, ratingColor("C")],
+      [dd.d4/maxRatio, ratingColor("D")],
+      [1, ratingColor("E")]
+    ].map(([p,c])=>[clamp(p,0,1), c]);
 
-  gaugeChart.setOption({
-    backgroundColor:"transparent",
-    tooltip:{ formatter:(p)=> `Attained/Required: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${rating}</b>` },
-    series:[{
-      type:"gauge",
-      min:0,
-      max:maxRatio,
-      splitNumber:6,
-      axisLine:{ lineStyle:{ width:16, color:segs }},
-      pointer:{ length:"62%", width:6 },
-      axisTick:{ distance:-14, length:6 },
-      splitLine:{ distance:-14, length:12 },
-      axisLabel:{
-        distance:18,
-        color:"rgba(255,255,255,.75)",
-        // FIX #1: μην εμφανίζεις 0.533333333
-        formatter:(v)=> String(roundTo(v,2))
-      },
-      title:{ show:true, offsetCenter:[0,"68%"], color:"rgba(255,255,255,.75)", fontSize:12 },
-      detail:{
-        valueAnimation:true,
-        fontSize:26,
-        offsetCenter:[0,"20%"],
-        color:"rgba(255,255,255,.92)",
-        formatter:(v)=> fmt(v,3)
-      },
-      data:[{ value: ratio, name:"Attained / Required" }]
-    }]
-  });
-}
-
-function renderBarAllFuels(allFuels, unit){
-  // FIX #2: δείξε όλα τα fuels (ακόμα κι αν cons=0)
-  const names = allFuels.map(f=>f.name);
-  const values = allFuels.map(f=>{
-    const cons_t = normalizeFuelConsToTon(f.cons, unit);
-    const co2 = (cons_t > 0 && f.cf > 0) ? cons_t * f.cf : 0;
-    return Number(co2.toFixed(3));
-  });
-
-  barChart.setOption({
-    backgroundColor:"transparent",
-    tooltip:{ trigger:"axis", axisPointer:{ type:"shadow" },
-      formatter:(params)=>{
-        const p = params[0];
-        const f = allFuels[p.dataIndex];
-        const cons_t = normalizeFuelConsToTon(f.cons, unit);
-        return `<b>${escapeHtml(f.name)}</b><br/>Consumption: ${fmt(cons_t,2)} t<br/>CF: ${fmt(f.cf,3)}<br/>CO₂: <b>${fmt(p.value,1)} t</b>`;
-      }
-    },
-    grid:{ left:54, right:18, top:18, bottom:56 },
-    xAxis:{
-      type:"category",
-      data:names,
-      axisLabel:{ color:"rgba(255,255,255,.75)", rotate:22, interval:0 },
-      axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
-    },
-    yAxis:{
-      type:"value",
-      axisLabel:{ color:"rgba(255,255,255,.75)" },
-      splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } }
-    },
-    series:[{
-      type:"bar",
-      data:values,
-      barWidth:"55%",
-      itemStyle:{ borderRadius:[10,10,6,6] },
-      emphasis:{ focus:"series" }
-    }]
-  });
-}
-
-function renderProjection({shipType, cap, cii_ref, attained}){
-  const years = [2023,2024,2025,2026,2027,2028,2029,2030];
-  const reqSeries = years.map(y=>{
-    const z = Z(y);
-    const req = cii_ref * (100-z)/100;
-    return Number(req.toFixed(4));
-  });
-  const attSeries = years.map(()=> Number(attained.toFixed(4)));
-
-  lineChart.setOption({
-    backgroundColor:"transparent",
-    tooltip:{ trigger:"axis" },
-    legend:{ top:10, textStyle:{ color:"rgba(255,255,255,.75)" } },
-    grid:{ left:54, right:18, top:44, bottom:40 },
-    xAxis:{
-      type:"category",
-      data:years,
-      axisLabel:{ color:"rgba(255,255,255,.75)" },
-      axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
-    },
-    yAxis:{
-      type:"value",
-      axisLabel:{ color:"rgba(255,255,255,.75)" },
-      splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } }
-    },
-    series:[
-      { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:8, lineStyle:{ width:3 } },
-      { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:8, lineStyle:{ width:2, type:"dashed" } },
-    ]
-  });
-}
-
-function renderGradeVsDistance({shipType, year, cap, corr, fuels, unit, required}){
-  // vary distance from 50% to 150% (21 points)
-  const baseDist = Number(els.distance.value);
-  const points = [];
-  for (let i=0;i<=20;i++){
-    const factor = 0.5 + (i*(1.0/20)); // 0.5..1.5
-    const dist = baseDist * factor;
-    const co2_t = computeCO2Tonnes(fuels, unit); // same emissions
-    const att = computeAttainedCII(co2_t, cap, dist, corr);
-    const {rating, ratio} = computeRating(shipType, att, required);
-    points.push({ dist: Math.round(dist), rating, rnum: ratingToNum(rating), ratio: Number(ratio.toFixed(4)) });
+    gaugeChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ formatter:(p)=> `Att/Req: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${rating}</b>` },
+      series:[{
+        type:"gauge",
+        min:0, max:maxRatio, splitNumber:6,
+        axisLine:{ lineStyle:{ width:16, color:segs } },
+        pointer:{ length:"62%", width:6 },
+        axisTick:{ distance:-14, length:6 },
+        splitLine:{ distance:-14, length:12 },
+        axisLabel:{ distance:18, color:"rgba(255,255,255,.75)", formatter:(v)=> String(roundTo(v,2)) },
+        title:{ show:true, offsetCenter:[0,"68%"], color:"rgba(255,255,255,.75)", fontSize:12 },
+        detail:{ valueAnimation:true, fontSize:26, offsetCenter:[0,"20%"], color:"rgba(255,255,255,.92)", formatter:(v)=> fmt(v,3) },
+        data:[{ value: ratio, name:"Attained / Required" }]
+      }]
+    });
   }
 
-  const xs = points.map(p=>p.dist);
-  const ys = points.map(p=>p.rnum);
+  function renderBarAllFuels(allFuels, unit){
+    const names = allFuels.map(f=>f.name);
+    const values = allFuels.map(f=>{
+      const t = consToTon(f.cons, unit);
+      const co2 = (t>0 && f.cf>0) ? t*f.cf : 0;
+      return Number(co2.toFixed(3));
+    });
 
-  gradeDistChart.setOption({
-    backgroundColor:"transparent",
-    tooltip:{
-      trigger:"axis",
-      formatter:(params)=>{
-        const idx = params[0].dataIndex;
-        const p = points[idx];
-        return `Distance: <b>${fmt0(p.dist)} nm</b><br/>Rating: <b>${p.rating}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
-      }
-    },
-    grid:{ left:70, right:18, top:18, bottom:44 },
-    xAxis:{
-      type:"category",
-      data:xs,
-      axisLabel:{ color:"rgba(255,255,255,.75)" },
-      axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
-    },
-    yAxis:{
-      type:"value",
-      min:1,
-      max:5,
-      interval:1,
-      inverse:true, // A on top
-      axisLabel:{
-        color:"rgba(255,255,255,.75)",
-        formatter:(v)=> numToRating(v)
-      },
-      splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } }
-    },
-    visualMap:{
-      show:false,
-      dimension:1,
-      pieces:[
-        {lte:1, color: ratingColor("A")},
-        {gt:1, lte:2, color: ratingColor("B")},
-        {gt:2, lte:3, color: ratingColor("C")},
-        {gt:3, lte:4, color: ratingColor("D")},
-        {gt:4, color: ratingColor("E")}
+    barChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis", axisPointer:{type:"shadow"} },
+      grid:{ left:54, right:18, top:18, bottom:56 },
+      xAxis:{ type:"category", data:names, axisLabel:{ color:"rgba(255,255,255,.75)", rotate:22, interval:0 },
+              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
+      yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
+              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+      series:[{ type:"bar", data:values, barWidth:"55%", itemStyle:{ borderRadius:[10,10,6,6] } }]
+    });
+  }
+
+  function renderProjection(cii_ref, attained){
+    const years=[2023,2024,2025,2026,2027,2028,2029,2030];
+    const reqSeries = years.map(y=> Number((cii_ref*(100-Z(y))/100).toFixed(4)));
+    const attSeries = years.map(()=> Number(attained.toFixed(4)));
+
+    lineChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis" },
+      legend:{ top:10, textStyle:{ color:"rgba(255,255,255,.75)" } },
+      grid:{ left:54, right:18, top:44, bottom:40 },
+      xAxis:{ type:"category", data:years, axisLabel:{ color:"rgba(255,255,255,.75)" },
+              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
+      yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
+              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+      series:[
+        { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:8, lineStyle:{ width:3 } },
+        { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:8, lineStyle:{ width:2, type:"dashed" } },
       ]
-    },
-    series:[{
-      type:"line",
-      data: ys,
-      smooth:true,
-      symbolSize:8,
-      lineStyle:{ width:3 },
-      areaStyle:{ opacity:0.08 }
-    }]
-  });
-}
-
-function buildOptimizerTargetsFromTable(allFuels){
-  // target dropdown: fuels with valid CF (even if consumption 0)
-  const unique = [];
-  const seen = new Set();
-  for (const f of allFuels){
-    const name = (f.name||"").trim();
-    if (!name) continue;
-    if (seen.has(name.toLowerCase())) continue;
-    if (!Number.isFinite(f.cf) || f.cf <= 0) continue;
-    unique.push({name, cf:f.cf});
-    seen.add(name.toLowerCase());
+    });
   }
-  return unique.sort((a,b)=>a.name.localeCompare(b.name));
-}
 
-function refreshOptimizerTargets(){
-  const all = getAllFuelRows();
-  const targets = buildOptimizerTargetsFromTable(all);
-  const prev = els.optTarget.value;
+  function renderGradeVsDistance(shipType, year, cap, corr, fuels, unit, required){
+    const baseDist = Number(els.distance.value);
+    const points=[];
+    const co2_t = computeCO2Tonnes(fuels, unit);
+    for(let i=0;i<=20;i++){
+      const factor = 0.5 + i*(1/20);
+      const dist = baseDist*factor;
+      const att = computeAttained(co2_t, cap, dist, corr);
+      const {rating, ratio} = computeRating(shipType, att, required);
+      points.push({dist:Math.round(dist), rnum:ratingToNum(rating), rating, ratio});
+    }
+    gradeDistChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis",
+        formatter:(ps)=>{
+          const p = points[ps[0].dataIndex];
+          return `Distance: <b>${fmt0(p.dist)} nm</b><br/>Rating: <b>${p.rating}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
+        }
+      },
+      grid:{ left:70, right:18, top:18, bottom:44 },
+      xAxis:{ type:"category", data:points.map(p=>p.dist),
+              axisLabel:{ color:"rgba(255,255,255,.75)" },
+              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
+      yAxis:{ type:"value", min:1, max:5, interval:1, inverse:true,
+              axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=>numToRating(v) },
+              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+      series:[{ type:"line", smooth:true, data:points.map(p=>p.rnum), symbolSize:8, lineStyle:{ width:3 }, areaStyle:{ opacity:0.08 } }]
+    });
+  }
 
-  els.optTarget.innerHTML = "";
-  targets.forEach(t=>{
-    const opt = document.createElement("option");
-    opt.value = t.name;
-    opt.textContent = `${t.name} (CF ${roundTo(t.cf,3)})`;
-    els.optTarget.appendChild(opt);
+  function optimizerTargets(allFuels){
+    const seen = new Set();
+    const t = [];
+    for (const f of allFuels){
+      const name = (f.name||"").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      if (!Number.isFinite(f.cf) || f.cf<=0) continue;
+      seen.add(key);
+      t.push({name, cf:f.cf});
+    }
+    return t.sort((a,b)=>a.name.localeCompare(b.name));
+  }
+
+  function refreshOptimizerTargets(){
+    const all = getAllFuelRows();
+    const targets = optimizerTargets(all);
+    const prev = els.optTarget.value;
+    els.optTarget.innerHTML = "";
+    for (const x of targets){
+      const o = document.createElement("option");
+      o.value = x.name;
+      o.textContent = `${x.name} (CF ${roundTo(x.cf,3)})`;
+      els.optTarget.appendChild(o);
+    }
+    if (prev && targets.some(x=>x.name===prev)) els.optTarget.value = prev;
+
+    const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
+    els.optTopSuggest.textContent = best.length
+      ? `Καλές εναλλακτικές (χαμηλότερο CF): ` + best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")
+      : "—";
+  }
+
+  function optimizerScenario(allFuels, unit, targetName, pct){
+    const fuels = allFuels.map(f=>({...f}));
+    const p = clamp(Number(pct)/100, 0, 1);
+
+    const targetIdx = fuels.findIndex(f => (f.name||"").trim()===targetName);
+    if (targetIdx<0) return {ok:false};
+
+    const totalT = fuels.reduce((s,f)=> s + Math.max(0, consToTon(f.cons, unit)), 0);
+    if (totalT<=0) return {ok:false};
+
+    const moveT = totalT*p;
+
+    const donors = fuels.map((f,i)=>({i, cf:f.cf, t:Math.max(0, consToTon(f.cons, unit))}))
+      .filter(x=>x.t>0 && Number.isFinite(x.cf) && x.cf>0)
+      .sort((a,b)=>b.cf-a.cf);
+
+    let rem = moveT;
+    for (const d of donors){
+      if (d.i===targetIdx) continue;
+      if (rem<=0) break;
+      const take = Math.min(d.t, rem);
+      const newDonT = d.t - take;
+      fuels[d.i].cons = (unit==="kg") ? newDonT*1000 : newDonT;
+
+      const tgtT = Math.max(0, consToTon(fuels[targetIdx].cons, unit));
+      const newTgtT = tgtT + take;
+      fuels[targetIdx].cons = (unit==="kg") ? newTgtT*1000 : newTgtT;
+
+      rem -= take;
+    }
+    return {ok:true, fuels};
+  }
+
+  function renderOptPie(curCO2, newCO2){
+    optChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"item", formatter:(p)=> `${p.name}: <b>${fmt(p.value,1)} tCO₂</b>` },
+      series:[{
+        type:"pie",
+        radius:["45%","75%"],
+        label:{ color:"rgba(255,255,255,.75)" },
+        labelLine:{ lineStyle:{ color:"rgba(255,255,255,.35)" } },
+        data:[
+          { name:"Current", value:Number(curCO2.toFixed(3)) },
+          { name:"After switch", value:Number(newCO2.toFixed(3)) }
+        ]
+      }]
+    });
+  }
+
+  /* ---------------------------
+     MAIN RUN
+  ----------------------------*/
+  function run(){
+    hideErr();
+    ensureCharts();
+
+    const shipType = els.shipType.value;
+    const year = Number(els.year.value);
+    const cap = Number(els.capacity.value);
+    const dist = Number(els.distance.value);
+    const corr = clamp(Number(els.corr.value||1), 0, 10);
+    const unit = els.fuelUnit.value;
+
+    if (!REF[shipType] || !DD[shipType]) return;
+    if (!Number.isFinite(cap) || cap<=0) return;
+    if (!Number.isFinite(dist) || dist<=0) return;
+
+    const allFuels = getAllFuelRows();
+
+    const co2_t = computeCO2Tonnes(allFuels, unit);
+    const attained = computeAttained(co2_t, cap, dist, corr);
+    const {required, cii_ref} = computeRequired(shipType, cap, year);
+    const {rating, ratio, dd} = computeRating(shipType, attained, required);
+
+    els.kpiCO2.textContent = `${fmt0(co2_t)} tCO₂`;
+    els.kpiAtt.textContent = fmt(attained, 3);
+    els.kpiReq.textContent = fmt(required, 3);
+    els.kpiRating.textContent = rating;
+    els.kpiRating.style.color = ratingColor(rating);
+    els.kpiBand.textContent = `Att/Req = ${fmt(ratio,3)}`;
+
+    renderGauge(ratio, rating, dd);
+    renderBarAllFuels(allFuels, unit);
+    renderGradeVsDistance(shipType, year, cap, corr, allFuels, unit, required);
+    renderProjection(cii_ref, attained);
+
+    refreshOptimizerTargets();
+    const target = els.optTarget.value || optimizerTargets(allFuels)[0]?.name || "";
+    const pct = Number(els.optPct.value || 0);
+
+    const scen = optimizerScenario(allFuels, unit, target, pct);
+    if (!scen.ok){
+      els.optCur.textContent = rating;
+      els.optNew.textContent = "—";
+      els.optDelta.textContent = "—";
+      els.optCO2.textContent = "—";
+      renderOptPie(co2_t, co2_t);
+      return;
+    }
+
+    const newCO2 = computeCO2Tonnes(scen.fuels, unit);
+    const newAtt = computeAttained(newCO2, cap, dist, corr);
+    const {rating:newRating, ratio:newRatio} = computeRating(shipType, newAtt, required);
+
+    els.optCur.textContent = `${rating} (Att/Req ${fmt(ratio,2)})`;
+    els.optCur.style.color = ratingColor(rating);
+    els.optNew.textContent = `${newRating} (Att/Req ${fmt(newRatio,2)})`;
+    els.optNew.style.color = ratingColor(newRating);
+
+    els.optDelta.textContent = `${(newAtt-attained)>=0?"+":""}${fmt(newAtt-attained,3)}`;
+    els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
+
+    renderOptPie(co2_t, newCO2);
+  }
+
+  // events
+  ["shipType","year","capacity","distance","corr","fuelUnit"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", run);
+    document.getElementById(id).addEventListener("change", run);
   });
 
-  // try keep selection
-  if (prev && targets.some(t=>t.name===prev)) els.optTarget.value = prev;
+  document.getElementById("addFuel").addEventListener("click", ()=>{
+    els.fuelBody.appendChild(fuelRowTemplate({name:"New fuel", cons:0, cf:3.114}));
+    refreshOptimizerTargets();
+    run();
+  });
 
-  els.optTarget.addEventListener("change", run);
-  els.optPct.addEventListener("input", run);
+  document.getElementById("calcBtn").addEventListener("click", run);
 
-  // show suggestions (top lowest CF from table+library)
-  const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
-  if (best.length){
-    els.optTopSuggest.textContent =
-      `Καλές εναλλακτικές (χαμηλότερο CF): ` +
-      best.map(b=>`${b.name} (CF ${rou
+  document.getElementById("demoBtn").addEventListener("click", ()=>{
+    els.shipType.value="bulk";
+    els.year.value="2026";
+    els.capacity.value=62000;
+    els.distance.value=60045;
+    els.corr.value=1.00;
+    els.fuelUnit.value="ton";
+    initFuelTable();
+    refreshOptimizerTargets();
+    run();
+  });
+
+  document.getElementById("optTarget").addEventListener("change", run);
+  document.getElementById("optPct").addEventListener("input", run);
+
+  document.getElementById("exportBtn").addEventListener("click", ()=>{
+    ensureCharts();
+    const a=document.createElement("a");
+    const bg="#0b1020";
+    const list = [
+      ["cii_gauge.png", gaugeChart],
+      ["cii_co2_by_fuel.png", barChart],
+      ["cii_grade_vs_distance.png", gradeDistChart],
+      ["cii_optimizer.png", optChart],
+      ["cii_projection.png", lineChart],
+    ];
+    for (const [name,ch] of list){
+      const url = ch.getDataURL({type:"png", pixelRatio:2, backgroundColor:bg});
+      a.href=url; a.download=name; a.click();
+    }
+  });
+
+  // init
+  try{
+    initFuelTable();
+    refreshOptimizerTargets();
+    run();
+  } catch(e){
+    showErr("Κάτι πήγε στραβά στο JavaScript. Αν δεις αυτό, πιθανότατα το αρχείο δεν αντιγράφηκε σωστά.");
+    console.error(e);
+  }
+});
+</script>
+</body>
+</html>
