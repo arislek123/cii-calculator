@@ -739,22 +739,8 @@
       backgroundColor:"transparent",
       tooltip:{ trigger:"axis", axisPointer:{type:"shadow"} },
       grid:{ left:54, right:18, top:18, bottom:56 },
-      xAxis:{
-  type:"value",
-  name:"Distance (nm)",
-  nameTextStyle:{ color:"rgba(255,255,255,.65)" },
-  axisLabel:{ color:"rgba(255,255,255,.75)" },
-  splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
-  axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
-},
-series:[{
-  type:"line",
-  smooth:true,
-  data: pts.map(p => [p.dist, p.rnum]),   // <- x,y pairs
-  symbolSize:6,
-  lineStyle:{ width:3 },
-  areaStyle:{ opacity:0.08 }
-}],
+      xAxis:{ type:"category", data:names, axisLabel:{ color:"rgba(255,255,255,.75)", rotate:22, interval:0 },
+              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
       yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
               splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
       series:[{ type:"bar", data:values, barWidth:"55%", itemStyle:{ borderRadius:[10,10,6,6] } }]
@@ -1051,4 +1037,3 @@ series:[{
 </script>
 </body>
 </html>
-
