@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CII Calculator Dashboard</title>
 
-  <!-- If CDN is blocked, the app still works (without charts). -->
+  <!-- Charts -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+  <!-- PDF report (client-side) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
@@ -21,7 +24,12 @@
       --warn:#ffcc00;
       --bad2:#ff7a57;
       --bad:#ff5c7a;
+      --accent: rgba(124,92,255,.95);
+      --accent2: rgba(124,92,255,.55);
+      --glass: rgba(255,255,255,.06);
+      --glass2: rgba(255,255,255,.03);
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
@@ -34,17 +42,20 @@
       color:var(--text);
       line-height:1.35;
     }
+
     header{
-      padding:20px 20px 12px;
+      padding:18px 20px 10px;
       max-width:1280px;
       margin:0 auto;
       display:flex;
       align-items:flex-end;
       justify-content:space-between;
-      gap:16px;
+      gap:14px;
     }
     h1{ margin:0; font-size:22px; letter-spacing:.2px; }
-    .pillrow{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:6px; }
+
+    .pillrow{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
     .pill{
       border:1px solid var(--border);
       background:rgba(255,255,255,.04);
@@ -68,25 +79,67 @@
 
     .card{
       border:1px solid var(--border);
-      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      background:linear-gradient(180deg, var(--glass), var(--glass2));
       border-radius:var(--radius);
       box-shadow:var(--shadow);
       backdrop-filter:blur(12px);
       overflow:hidden;
     }
+
     .card .hd{
       padding:14px 16px;
       border-bottom:1px solid var(--border);
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:12px;
     }
-    .card .hd .t{ font-weight:750; }
+    .card .hd .t{ font-weight:800; }
     .card .hd .d{ color:var(--muted); font-size:12px; margin-top:2px; }
     .card .bd{ padding:14px 16px; }
 
+    .toolbar{
+      max-width:1280px;
+      margin:8px auto 0;
+      padding:0 20px;
+    }
+    .banner{
+      border:1px solid rgba(43,213,118,.25);
+      background:rgba(43,213,118,.10);
+      color:rgba(255,255,255,.90);
+      border-radius:14px;
+      padding:10px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .banner small{ color:rgba(255,255,255,.75); }
+    .banner .right{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .banner .warn{
+      border:1px solid rgba(255,204,0,.25);
+      background:rgba(255,204,0,.10);
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:rgba(255,255,255,.85);
+    }
+
+    .errBanner{
+      max-width:1280px;
+      margin:10px auto 0;
+      padding:12px 16px;
+      border-radius:14px;
+      border:1px solid rgba(255,92,122,.35);
+      background:rgba(255,92,122,.10);
+      color:rgba(255,255,255,.90);
+      display:none;
+      white-space:pre-wrap;
+    }
+
     .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
     label{ display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--muted); }
     input, select{
       width:100%;
@@ -98,25 +151,48 @@
       color:var(--text);
     }
 
+    .help{
+      color:rgba(255,255,255,.65);
+      font-size:12px;
+      line-height:1.25;
+      margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .help b{ color:rgba(255,255,255,.92); }
+
     .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
     button{
       cursor:pointer;
       border:none;
       border-radius:12px;
       padding:10px 12px;
-      font-weight:750;
-      background:linear-gradient(135deg, rgba(124,92,255,.95), rgba(124,92,255,.55));
+      font-weight:800;
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
       color:white;
       box-shadow:0 12px 28px rgba(124,92,255,.25);
       transition:transform .08s ease, filter .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
     }
     button:hover{ filter:brightness(1.05); }
     button:active{ transform:translateY(1px); }
+    button:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
+
     .ghost{
       background:rgba(255,255,255,.07);
       box-shadow:none;
       border:1px solid var(--border);
       color:var(--text);
+      font-weight:750;
+    }
+    .danger{
+      background:rgba(255,92,122,.12);
+      border:1px solid rgba(255,92,122,.25);
+      box-shadow:none;
     }
 
     .kpis{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
@@ -127,7 +203,7 @@
       padding:12px;
     }
     .kpi .name{ color:var(--muted); font-size:12px; }
-    .kpi .val{ font-size:18px; font-weight:850; margin-top:4px; }
+    .kpi .val{ font-size:18px; font-weight:900; margin-top:4px; }
     .kpi .hint{ color:var(--muted); font-size:12px; margin-top:4px; }
 
     .fuel-table{ width:100%; border-collapse:separate; border-spacing:0 10px; margin-top:10px; }
@@ -180,8 +256,12 @@
     .chartWrap .chHd{
       padding:12px 14px;
       border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
     }
-    .chartWrap .chHd .ct{ font-weight:750; }
+    .chartWrap .chHd .ct{ font-weight:800; }
     .chartWrap .chHd .cd{ color:var(--muted); font-size:12px; margin-top:2px; }
     .chartWrap .chBd{ padding:10px 12px 12px; }
     .chart{ height:300px; width:100%; display:flex; align-items:center; justify-content:center; }
@@ -215,28 +295,26 @@
       padding:10px 12px;
     }
     .optCard .h{ color:var(--muted); font-size:12px; }
-    .optCard .v{ font-weight:850; margin-top:4px; font-size:14px; }
+    .optCard .v{ font-weight:900; margin-top:4px; font-size:14px; }
 
-    .errBanner{
-      max-width:1280px;
-      margin:10px auto 0;
-      padding:12px 16px;
-      border-radius:14px;
-      border:1px solid rgba(255,92,122,.35);
-      background:rgba(255,92,122,.10);
-      color:rgba(255,255,255,.90);
-      display:none;
-      white-space:pre-wrap;
+    .rowActions{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:12px;
     }
-    .okBanner{
-      max-width:1280px;
-      margin:10px auto 0;
-      padding:10px 16px;
-      border-radius:14px;
-      border:1px solid rgba(43,213,118,.25);
-      background:rgba(43,213,118,.10);
-      color:rgba(255,255,255,.90);
-      display:none;
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05);
+      color:rgba(255,255,255,.85);
     }
 
     @media (max-width:1060px){
@@ -250,7 +328,10 @@
 
 <body>
 <header>
-  <div><h1>CII Dashboard — Attained / Required / Rating</h1></div>
+  <div>
+    <h1>CII Dashboard — Attained / Required / Rating</h1>
+    <div class="sub">Υπολογισμός Attained/Required CII, rating A–E, charts και “what-if” fuel switch.</div>
+  </div>
   <div class="pillrow">
     <div class="pill">Μονάδα: <strong>gCO₂ / (capacity·nm)</strong></div>
     <div class="pill">Capacity: <strong>DWT ή GT</strong></div>
@@ -258,17 +339,30 @@
   </div>
 </header>
 
+<div class="toolbar">
+  <div class="banner">
+    <div>
+      <b>Quick tips:</b> βάλε σωστά <b>annual distance</b> + <b>annual fuel</b> (ίδιες χρονικές βάσεις).
+      <small>Η απόσταση επηρεάζει το denominator (capacity·nm), το fuel τις εκπομπές.</small>
+    </div>
+    <div class="right">
+      <span id="chartsState" class="warn">Checking charts…</span>
+      <button id="pdfBtn" class="ghost" type="button" title="Κατεβάζει PDF report με KPIs & charts" disabled>📄 Download PDF</button>
+    </div>
+  </div>
+</div>
+
 <div id="errBanner" class="errBanner"></div>
-<div id="okBanner" class="okBanner">JS Loaded OK ✅ (αν δεν βλέπεις charts, πιθανόν το ECharts CDN είναι blocked)</div>
 
 <main>
   <!-- LEFT -->
-  <section class="card">
+  <section class="card" id="inputsCard">
     <div class="hd">
       <div>
         <div class="t">Είσοδοι</div>
         <div class="d">Ship type, capacity, distance, fuel consumption</div>
       </div>
+      <span class="badge" id="ratingBadge">—</span>
     </div>
 
     <div class="bd">
@@ -335,15 +429,20 @@
         </label>
       </div>
 
-      <div style="margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div class="help" id="sanityHelp">
+        <b>Sanity check:</b>
+        <span id="sanityText">—</span>
+      </div>
+
+      <div class="rowActions">
         <div>
-          <div style="font-weight:750;">Καύσιμα & CF (tCO₂ / t fuel)</div>
-          <div class="mini">Ο πίνακας είναι ήδη “γεμάτος” (static). Αν τον βλέπεις άδειο, δεν άνοιξες το σωστό αρχείο.</div>
+          <div style="font-weight:850;">Καύσιμα & CF (tCO₂ / t fuel)</div>
+          <div class="mini">Δώσε annual consumption. Το CF μπορείς να το αλλάξεις αν έχεις επίσημες τιμές.</div>
         </div>
         <button class="ghost" id="addFuel" type="button">+ Fuel row</button>
       </div>
 
-      <!-- STATIC default rows in HTML (so you never see an empty table) -->
+      <!-- STATIC default rows in HTML -->
       <table class="fuel-table">
         <thead>
           <tr>
@@ -376,24 +475,26 @@
       </table>
 
       <div class="btnrow">
-        <button id="calcBtn" type="button">Υπολόγισε</button>
-        <button class="ghost" id="demoBtn" type="button">Demo</button>
-        <button class="ghost" id="exportBtn" type="button">Export charts PNG</button>
+        <button id="calcBtn" type="button">🧮 Υπολόγισε</button>
+        <button class="ghost" id="demoBtn" type="button">✨ Demo</button>
+        <button class="ghost" id="exportBtn" type="button">🖼️ Export charts PNG</button>
       </div>
 
       <div class="hintbox">
         Tip: Αν θες “καθαρό” αποτέλεσμα χωρίς διορθώσεις, άφησε Correction factor = <b>1.00</b>.
+        Αν το annual distance είναι πολύ μικρό, το Attained “φουσκώνει”.
       </div>
     </div>
   </section>
 
   <!-- RIGHT -->
-  <section class="card">
+  <section class="card" id="resultsCard">
     <div class="hd">
       <div>
         <div class="t">Αποτελέσματα & Διαγράμματα</div>
         <div class="d">Gauge, CO₂ breakdown, grade-vs-distance, optimizer, projection</div>
       </div>
+      <div class="mini" id="lastRun">—</div>
     </div>
 
     <div class="bd">
@@ -423,32 +524,46 @@
       <div class="charts">
         <div class="chartWrap">
           <div class="chHd">
-            <div class="ct">Rating Gauge</div>
-            <div class="cd">Attained/Required + bands A–E</div>
+            <div>
+              <div class="ct">Rating Gauge</div>
+              <div class="cd">Attained/Required + bands A–E</div>
+            </div>
           </div>
-          <div class="chBd"><div id="gauge" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
+          <div class="chBd">
+            <div id="gauge" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+          </div>
         </div>
 
         <div class="chartWrap">
           <div class="chHd">
-            <div class="ct">CO₂ ανά καύσιμο</div>
-            <div class="cd">Όλα τα fuels που υπάρχουν στον πίνακα</div>
+            <div>
+              <div class="ct">CO₂ ανά καύσιμο</div>
+              <div class="cd">Όλα τα fuels που υπάρχουν στον πίνακα</div>
+            </div>
           </div>
-          <div class="chBd"><div id="bar" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
+          <div class="chBd">
+            <div id="bar" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+          </div>
         </div>
 
         <div class="chartWrap">
           <div class="chHd">
-            <div class="ct">Grade vs Distance</div>
-            <div class="cd">Rating αν αλλάξει η απόσταση (ίδιες εκπομπές)</div>
+            <div>
+              <div class="ct">Grade vs Distance</div>
+              <div class="cd">Πότε αλλάζει το grade αν αλλάξει η απόσταση</div>
+            </div>
           </div>
-          <div class="chBd"><div id="gradeDist" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
+          <div class="chBd">
+            <div id="gradeDist" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+          </div>
         </div>
 
         <div class="chartWrap">
           <div class="chHd">
-            <div class="ct">Fuel Switch Optimizer</div>
-            <div class="cd">What-if αλλαγή μίγματος καυσίμων</div>
+            <div>
+              <div class="ct">Fuel Switch Optimizer</div>
+              <div class="cd">What-if αλλαγή μίγματος + απλό chart μίγματος (%)</div>
+            </div>
           </div>
           <div class="chBd">
             <div class="optBox">
@@ -472,17 +587,28 @@
             </div>
 
             <div style="margin-top:10px;">
-              <div id="optChart" class="chart" style="height:220px;"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+              <!-- Simplified: 100% stacked mix chart (Current vs After) -->
+              <div id="optMixChart" class="chart" style="height:240px;">
+                <div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div>
+              </div>
+            </div>
+
+            <div class="help" style="margin-top:10px;">
+              <b>Πώς παίρνει το %;</b> Μεταφέρει το Χ% της συνολικής κατανάλωσης από τα καύσιμα με μεγαλύτερο CF πρώτα, προς το target.
             </div>
           </div>
         </div>
 
         <div class="chartWrap big">
           <div class="chHd">
-            <div class="ct">Projection αυστηροποίησης</div>
-            <div class="cd">Required CII ανά έτος vs σταθερό Attained</div>
+            <div>
+              <div class="ct">Projection αυστηροποίησης</div>
+              <div class="cd">Required CII ανά έτος vs σταθερό Attained</div>
+            </div>
           </div>
-          <div class="chBd"><div id="line" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div></div>
+          <div class="chBd">
+            <div id="line" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -491,8 +617,13 @@
 
 <script>
 (() => {
+  // ===== UI helpers =====
   const errBanner = document.getElementById("errBanner");
-  const okBanner  = document.getElementById("okBanner");
+  const chartsState = document.getElementById("chartsState");
+  const pdfBtn = document.getElementById("pdfBtn");
+  const lastRun = document.getElementById("lastRun");
+  const ratingBadge = document.getElementById("ratingBadge");
+  const sanityText = document.getElementById("sanityText");
 
   function showErr(msg){
     errBanner.style.display = "block";
@@ -502,14 +633,8 @@
     errBanner.style.display = "none";
     errBanner.textContent = "";
   }
-  function showOK(){
-    okBanner.style.display = "block";
-  }
 
-  // Make sure JS is running
-  showOK();
-
-  // ---------- Parameters (demo) ----------
+  // ===== Tables & factors (same functionality, kept) =====
   const REF = {
     bulk:        { piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
     tanker:      { piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
@@ -573,9 +698,9 @@
     { name:"Hydrogen (indicative)", cf:0.00 },
   ];
 
-  // ---------- Helpers ----------
+  // ===== Formatting =====
   const css = getComputedStyle(document.documentElement);
-  const C = {
+  const COLORS = {
     A: css.getPropertyValue("--good").trim(),
     B: css.getPropertyValue("--good2").trim(),
     C: css.getPropertyValue("--warn").trim(),
@@ -586,11 +711,11 @@
   const roundTo = (n,d=2)=>{ const p=10**d; return Math.round(n*p)/p; };
   const fmt = (n,d=3)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:d, minimumFractionDigits:d}) : "—";
   const fmt0 = (n)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:0}) : "—";
-  const ratingColor = (r)=> C[r] ?? C.E;
+  const ratingColor = (r)=> COLORS[r] ?? COLORS.E;
   const ratingToNum = (r)=> ({A:1,B:2,C:3,D:4,E:5})[r] ?? 5;
   const numToRating = (n)=> ({1:"A",2:"B",3:"C",4:"D",5:"E"})[n] ?? "E";
 
-  // ---------- DOM ----------
+  // ===== DOM =====
   const els = {
     shipType: document.getElementById("shipType"),
     year: document.getElementById("year"),
@@ -624,15 +749,13 @@
     if (del) del.addEventListener("click", ()=>{ tr.remove(); refreshOptTargets(); run(); });
     tr.querySelectorAll("input").forEach(inp => inp.addEventListener("input", ()=>{ refreshOptTargets(); run(); }));
   }
-
-  // wire existing static rows
   [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
 
   function newRow(name="New fuel", cons=0, cf=3.114){
     const tr = document.createElement("tr");
     tr.className = "fuel-row";
     tr.innerHTML = `
-      <td><input class="rowbox fuel-name" value="${name.replaceAll('"','&quot;')}" /></td>
+      <td><input class="rowbox fuel-name" value="${String(name).replaceAll('"','&quot;')}" /></td>
       <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons}" /></td>
       <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf}" /></td>
       <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
@@ -660,6 +783,10 @@
     return co2;
   }
 
+  function totalTonnes(fuels, unit){
+    return fuels.reduce((s,f)=> s + Math.max(0, consToTon(f.cons, unit)), 0);
+  }
+
   function attainedCII(co2_t, cap, dist, corr){
     const co2_g = co2_t * 1_000_000;
     return (co2_g/(cap*dist))*corr;
@@ -682,20 +809,28 @@
     return {r, ratio, dd:{d1,d2,d3,d4}};
   }
 
-  // ---------- Charts (optional) ----------
+  // ===== Charts =====
   const chartsEnabled = typeof window.echarts !== "undefined";
-  let gaugeChart, barChart, gradeDistChart, optChart, lineChart;
+  chartsState.textContent = chartsEnabled ? "Charts: OK" : "Charts: blocked";
+  chartsState.style.borderColor = chartsEnabled ? "rgba(43,213,118,.25)" : "rgba(255,92,122,.35)";
+  chartsState.style.background = chartsEnabled ? "rgba(43,213,118,.10)" : "rgba(255,92,122,.10)";
+  chartsState.style.color = "rgba(255,255,255,.85)";
+  pdfBtn.disabled = !chartsEnabled; // PDF uses chart screenshots (still can make text-only, but user asked easy)
+
+  let gaugeChart, barChart, gradeDistChart, optMixChart, lineChart;
 
   function ensureCharts(){
     if (!chartsEnabled) return;
     if (gaugeChart) return;
+
     gaugeChart = echarts.init(document.getElementById("gauge"));
     barChart = echarts.init(document.getElementById("bar"));
     gradeDistChart = echarts.init(document.getElementById("gradeDist"));
-    optChart = echarts.init(document.getElementById("optChart"));
+    optMixChart = echarts.init(document.getElementById("optMixChart"));
     lineChart = echarts.init(document.getElementById("line"));
+
     window.addEventListener("resize", ()=>{
-      gaugeChart.resize(); barChart.resize(); gradeDistChart.resize(); optChart.resize(); lineChart.resize();
+      gaugeChart.resize(); barChart.resize(); gradeDistChart.resize(); optMixChart.resize(); lineChart.resize();
     });
   }
 
@@ -713,6 +848,7 @@
 
     gaugeChart.setOption({
       backgroundColor:"transparent",
+      tooltip:{ formatter:(p)=> `Att/Req: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${r}</b>` },
       series:[{
         type:"gauge",
         min:0, max:maxRatio, splitNumber:6,
@@ -743,39 +879,59 @@
               axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
       yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
               splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
-      series:[{ type:"bar", data:values, barWidth:"55%", itemStyle:{ borderRadius:[10,10,6,6] } }]
+      series:[{ type:"bar", data:values, barWidth:"55%", itemStyle:{ borderRadius:[10,10,6,6] }, barMinHeight:2 }]
     });
   }
 
+  // Keep your grade chart (discrete A–E) but make x axis numeric for better reading
   function renderGradeVsDistance(shipType, cap, corr, fuels, unit, required){
     if (!chartsEnabled) return;
     ensureCharts();
+
     const baseDist = Number(els.distance.value);
     const co2_t = totalCO2t(fuels, unit);
+
     const pts=[];
-    for(let i=0;i<=20;i++){
-      const factor = 0.5 + i*(1/20);
+    for(let i=0;i<=24;i++){
+      const factor = 0.5 + i*(1/24);
       const dist = baseDist*factor;
       const att = attainedCII(co2_t, cap, dist, corr);
       const rr = rating(shipType, att, required);
-      pts.push({dist:Math.round(dist), rnum:ratingToNum(rr.r), r:rr.r, ratio:rr.ratio});
+      pts.push({dist, gradeNum:ratingToNum(rr.r), r:rr.r, ratio:rr.ratio});
     }
+
     gradeDistChart.setOption({
       backgroundColor:"transparent",
-      tooltip:{ trigger:"axis",
+      tooltip:{
+        trigger:"axis",
         formatter:(ps)=>{
-          const p = pts[ps[0].dataIndex];
-          return `Distance: <b>${fmt0(p.dist)} nm</b><br/>Rating: <b>${p.r}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
+          const x = Number(ps[0].axisValue);
+          const p = pts.reduce((best,cur)=> Math.abs(cur.dist-x)<Math.abs(best.dist-x) ? cur : best, pts[0]);
+          return `Distance: <b>${fmt0(x)} nm</b><br/>Rating: <b>${p.r}</b><br/>Att/Req: ${fmt(p.ratio,3)}`;
         }
       },
       grid:{ left:70, right:18, top:18, bottom:44 },
-      xAxis:{ type:"category", data:pts.map(p=>p.dist),
-              axisLabel:{ color:"rgba(255,255,255,.75)" },
-              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
-      yAxis:{ type:"value", min:1, max:5, interval:1, inverse:true,
-              axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=>numToRating(v) },
-              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
-      series:[{ type:"line", smooth:true, data:pts.map(p=>p.rnum), symbolSize:8, lineStyle:{ width:3 }, areaStyle:{ opacity:0.08 } }]
+      xAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"value", min:1, max:5, interval:1, inverse:true,
+        axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=>numToRating(v) },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      series:[{
+        name:"Grade",
+        type:"line",
+        step:"middle",
+        data: pts.map(p=> [p.dist, p.gradeNum]),
+        symbolSize:6,
+        lineStyle:{ width:3 },
+        areaStyle:{ opacity:0.06 }
+      }]
     });
   }
 
@@ -796,31 +952,13 @@
       yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
               splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
       series:[
-        { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:8, lineStyle:{ width:3 } },
-        { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:8, lineStyle:{ width:2, type:"dashed" } },
+        { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:7, lineStyle:{ width:3 } },
+        { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:7, lineStyle:{ width:2, type:"dashed" } },
       ]
     });
   }
 
-  function renderOptPie(curCO2, newCO2){
-    if (!chartsEnabled) return;
-    ensureCharts();
-    optChart.setOption({
-      backgroundColor:"transparent",
-      series:[{
-        type:"pie",
-        radius:["45%","75%"],
-        label:{ color:"rgba(255,255,255,.75)" },
-        labelLine:{ lineStyle:{ color:"rgba(255,255,255,.35)" } },
-        data:[
-          { name:"Current", value:Number(curCO2.toFixed(3)) },
-          { name:"After switch", value:Number(newCO2.toFixed(3)) }
-        ]
-      }]
-    });
-  }
-
-  // ---------- Optimizer ----------
+  // ===== Optimizer =====
   function buildTargets(fuels){
     const seen=new Set();
     const t=[];
@@ -838,7 +976,6 @@
 
   function refreshOptTargets(){
     const fuels = getFuels();
-    // add library (as target options) without touching table
     const merged = fuels.concat(ALT_LIBRARY.map(x=>({name:x.name, cons:0, cf:x.cf})));
     const targets = buildTargets(merged);
     const prev = els.optTarget.value;
@@ -862,7 +999,6 @@
     const p = clamp(Number(pct)/100, 0, 1);
     const out = fuels.map(f=>({...f}));
 
-    // If target not in table, add it with 0 cons using library CF
     let targetIdx = out.findIndex(f => (f.name||"").trim()===targetName);
     if (targetIdx < 0){
       const lib = ALT_LIBRARY.find(x=>x.name===targetName);
@@ -871,7 +1007,7 @@
       targetIdx = out.length - 1;
     }
 
-    const totalT = out.reduce((s,f)=> s + Math.max(0, consToTon(f.cons, unit)), 0);
+    const totalT = totalTonnes(out, unit);
     if (totalT <= 0) return {ok:false};
 
     let moveT = totalT * p;
@@ -880,9 +1016,12 @@
       .filter(x=>x.t>0 && Number.isFinite(x.cf) && x.cf>0)
       .sort((a,b)=>b.cf-a.cf);
 
+    const movedFrom = []; // for user-friendly explanation
+
     for (const d of donors){
       if (d.i === targetIdx) continue;
       if (moveT <= 0) break;
+
       const take = Math.min(d.t, moveT);
 
       const donorNewT = d.t - take;
@@ -892,16 +1031,215 @@
       const tgtNewT = tgtT + take;
       out[targetIdx].cons = (unit==="kg") ? tgtNewT*1000 : tgtNewT;
 
+      movedFrom.push({name: out[d.i].name, t: take});
       moveT -= take;
     }
 
-    return {ok:true, fuels:out};
+    return {ok:true, fuels:out, movedFrom};
   }
 
-  // ---------- Main ----------
+  // Simplified optimizer chart: 100% stacked mix (% consumption)
+  function renderOptMixChart(currentFuels, afterFuels, unit){
+    if (!chartsEnabled) return;
+    ensureCharts();
+
+    const toMap = (arr) => {
+      const m = new Map();
+      for (const f of arr){
+        const t = Math.max(0, consToTon(f.cons, unit));
+        if (!m.has(f.name)) m.set(f.name, 0);
+        m.set(f.name, m.get(f.name) + t);
+      }
+      return m;
+    };
+
+    const curMap = toMap(currentFuels);
+    const aftMap = toMap(afterFuels);
+
+    const allNames = Array.from(new Set([...curMap.keys(), ...aftMap.keys()]))
+      .filter(n=>n && n.trim().length)
+      .sort((a,b)=>a.localeCompare(b));
+
+    const curTotal = Array.from(curMap.values()).reduce((a,b)=>a+b,0) || 1;
+    const aftTotal = Array.from(aftMap.values()).reduce((a,b)=>a+b,0) || 1;
+
+    const series = allNames.map((name) => {
+      const curPct = ( (curMap.get(name)||0) / curTotal ) * 100;
+      const aftPct = ( (aftMap.get(name)||0) / aftTotal ) * 100;
+      return {
+        name,
+        type:"bar",
+        stack:"mix",
+        emphasis:{ focus:"series" },
+        data: [ Number(curPct.toFixed(2)), Number(aftPct.toFixed(2)) ],
+        barWidth:18
+      };
+    });
+
+    optMixChart.setOption({
+      backgroundColor:"transparent",
+      tooltip:{
+        trigger:"axis",
+        axisPointer:{ type:"shadow" },
+        formatter:(ps)=>{
+          const label = ps[0].axisValue;
+          const lines = ps
+            .filter(p=>p.data>0.01)
+            .sort((a,b)=>b.data-a.data)
+            .slice(0,8)
+            .map(p=>`${p.marker} ${p.seriesName}: <b>${fmt(p.data,2)}%</b>`);
+          return `<b>${label}</b><br/>` + (lines.length?lines.join("<br/>"):"(no consumption)");
+        }
+      },
+      legend:{
+        type:"scroll",
+        top:0,
+        textStyle:{ color:"rgba(255,255,255,.75)" }
+      },
+      grid:{ left:40, right:20, top:44, bottom:28 },
+      xAxis:{
+        type:"value",
+        max:100,
+        axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=> v + "%" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"category",
+        data:["Current mix","After switch"],
+        axisLabel:{ color:"rgba(255,255,255,.80)" },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      series
+    });
+  }
+
+  // ===== Sanity hints (user friendly) =====
+  function sanityMessage(shipType, distanceNm){
+    // not strict, just helpful ranges
+    const d = Number(distanceNm);
+    if (!Number.isFinite(d) || d<=0) return "Δώσε annual distance (nm).";
+
+    const typeHints = {
+      bulk: "Bulk συνήθως ~35,000–70,000 nm/yr.",
+      tanker: "Tanker συνήθως ~55,000–85,000 nm/yr (εκτός αν είναι πολύ low utilization).",
+      container: "Container liner συχνά ~70,000–100,000+ nm/yr.",
+      gas_65p: "Gas carriers συχνά ~50,000–90,000 nm/yr.",
+      gas_65m: "Gas carriers συχνά ~50,000–80,000 nm/yr.",
+      general_20p: "General cargo συχνά ~35,000–60,000 nm/yr.",
+      general_20m: "General cargo συχνά ~30,000–55,000 nm/yr.",
+      refrig: "Reefer συχνά ~40,000–70,000 nm/yr.",
+      combo: "Combination carriers συχνά ~40,000–70,000 nm/yr.",
+      lng_100p: "LNG συχνά ~60,000–90,000 nm/yr.",
+      lng_100m: "LNG συχνά ~60,000–90,000 nm/yr.",
+      roro_vc: "Vehicle carriers ~65,000–85,000 nm/yr.",
+      roro_cargo: "Ro-ro cargo ~55,000–75,000 nm/yr.",
+      roro_pax: "Ro-ro pax varies, αλλά συχνά 50,000+ nm/yr.",
+      cruise: "Cruise varies, συχνά 40,000–70,000 nm/yr.",
+      hsc: "HSC varies a lot."
+    };
+
+    const hint = typeHints[shipType] || "Δώσε ρεαλιστικό annual distance.";
+    if (d < 15000) return `⚠️ Πολύ χαμηλό annual distance (${fmt0(d)} nm). Αυτό συνήθως “φουσκώνει” το Attained CII. ${hint}`;
+    if (d > 120000) return `ℹ️ Πολύ υψηλό annual distance (${fmt0(d)} nm). Έλεγξε αν είναι annual. ${hint}`;
+    return `✅ ${hint}`;
+  }
+
+  // ===== PDF Report =====
+  async function downloadPDFReport(state){
+    try{
+      if (!chartsEnabled) {
+        alert("Charts blocked. Δεν μπορώ να βγάλω PDF με charts. (Άνοιξε/επίτρεψε το echarts CDN ή βάλε local.)");
+        return;
+      }
+      ensureCharts();
+
+      // jsPDF
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"p", unit:"mm", format:"a4" });
+
+      const margin = 10;
+      let y = 12;
+
+      // Header
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("CII Report — Attained / Required / Rating", margin, y);
+      y += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      const meta = [
+        `Ship type: ${state.shipTypeLabel}`,
+        `Year: ${state.year}`,
+        `Capacity: ${fmt0(state.cap)} (${state.capType})`,
+        `Annual distance: ${fmt0(state.dist)} nm`,
+        `Consumption unit: ${state.unit}`,
+        `Correction factor: ${state.corr}`
+      ];
+      meta.forEach(line => { doc.text(line, margin, y); y += 5; });
+      y += 2;
+
+      // KPIs block
+      doc.setFont("helvetica", "bold");
+      doc.text("KPIs", margin, y);
+      y += 6;
+
+      doc.setFont("helvetica", "normal");
+      const kpis = [
+        `Total CO2: ${fmt0(state.co2_t)} tCO2`,
+        `Attained CII: ${fmt(state.att,3)} gCO2/(capacity·nm)`,
+        `Required CII: ${fmt(state.req.required,3)} gCO2/(capacity·nm)`,
+        `Rating: ${state.rr.r} (Att/Req ${fmt(state.rr.ratio,3)})`
+      ];
+      kpis.forEach(line => { doc.text(line, margin, y); y += 5; });
+      y += 2;
+
+      // Fuel table (top 8 rows)
+      doc.setFont("helvetica","bold");
+      doc.text("Fuel inputs (top rows)", margin, y);
+      y += 6;
+      doc.setFont("helvetica","normal");
+
+      const fuels = state.fuels.slice(0,8);
+      fuels.forEach((f, idx)=>{
+        const t = consToTon(f.cons, state.unit);
+        doc.text(`${idx+1}. ${f.name} — cons: ${fmt0(f.cons)} (${state.unit}) | CF: ${f.cf} | CO2: ${fmt(t*f.cf,1)} t`, margin, y);
+        y += 5;
+      });
+      y += 2;
+
+      // Charts images
+      const addChart = (title, chart, w=190, h=55) => {
+        const img = chart.getDataURL({ type:"png", pixelRatio:2, backgroundColor:"#0b1020" });
+        if (y + h + 10 > 287) { doc.addPage(); y = 12; }
+        doc.setFont("helvetica","bold");
+        doc.text(title, margin, y);
+        y += 4;
+        doc.addImage(img, "PNG", margin, y, w, h);
+        y += h + 8;
+      };
+
+      addChart("Rating Gauge", gaugeChart, 190, 55);
+      addChart("CO2 by fuel", barChart, 190, 55);
+      addChart("Grade vs Distance", gradeDistChart, 190, 55);
+      addChart("Fuel mix % (Current vs After)", optMixChart, 190, 60);
+      addChart("Projection: Required vs Attained", lineChart, 190, 55);
+
+      doc.save(`CII_Report_${state.shipType}_${state.year}.pdf`);
+    } catch(e){
+      console.error(e);
+      alert("PDF generation failed. Άνοιξε Console (F12) για λεπτομέρειες.");
+    }
+  }
+
+  // ===== Run & compute =====
+  let lastState = null;
+
   function run(){
     try{
       hideErr();
+      ensureCharts();
 
       const shipType = els.shipType.value;
       const year = Number(els.year.value);
@@ -916,12 +1254,19 @@
 
       const fuels = getFuels();
 
+      // user-friendly sanity text
+      sanityText.textContent = sanityMessage(shipType, dist);
+
       const co2_t = totalCO2t(fuels, unit);
       const att   = attainedCII(co2_t, cap, dist, corr);
       const req   = requiredCII(shipType, cap, year);
       const rr    = rating(shipType, att, req.required);
 
-      // KPIs always (even if charts disabled)
+      // capacity type label
+      const capType = (shipType.startsWith("roro") || shipType==="cruise" || shipType==="hsc") ? "GT" : "DWT";
+      const shipTypeLabel = els.shipType.options[els.shipType.selectedIndex]?.textContent || shipType;
+
+      // KPIs
       els.kpiCO2.textContent = `${fmt0(co2_t)} tCO₂`;
       els.kpiAtt.textContent = fmt(att,3);
       els.kpiReq.textContent = fmt(req.required,3);
@@ -929,13 +1274,19 @@
       els.kpiRating.style.color = ratingColor(rr.r);
       els.kpiBand.textContent = `Att/Req = ${fmt(rr.ratio,3)}`;
 
-      // Charts (only if echarts is available)
+      ratingBadge.textContent = `Rating: ${rr.r} • Att/Req ${fmt(rr.ratio,3)}`;
+      ratingBadge.style.borderColor = "rgba(255,255,255,.12)";
+      ratingBadge.style.background = `linear-gradient(90deg, ${ratingColor(rr.r)}22, rgba(255,255,255,.05))`;
+
+      lastRun.textContent = `Updated: ${new Date().toLocaleString("el-GR")}`;
+
+      // Charts
       renderGauge(rr.ratio, rr.r, rr.dd);
       renderBar(fuels, unit);
       renderGradeVsDistance(shipType, cap, corr, fuels, unit, req.required);
       renderProjection(req.cii_ref, att);
 
-      // Optimizer UI
+      // Optimizer
       refreshOptTargets();
       const target = els.optTarget.value || "";
       const pct = Number(els.optPct.value || 0);
@@ -943,25 +1294,50 @@
       const scen = optimizerScenario(fuels, unit, target, pct);
       if (!scen.ok){
         els.optCur.textContent = rr.r;
+        els.optCur.style.color = ratingColor(rr.r);
         els.optNew.textContent = "—";
         els.optDelta.textContent = "—";
         els.optCO2.textContent = "—";
-        renderOptPie(co2_t, co2_t);
-        return;
+        // mix chart current=after
+        renderOptMixChart(fuels, fuels, unit);
+      } else {
+        const newCO2 = totalCO2t(scen.fuels, unit);
+        const newAtt = attainedCII(newCO2, cap, dist, corr);
+        const newRR  = rating(shipType, newAtt, req.required);
+
+        els.optCur.textContent = `${rr.r} (Att/Req ${fmt(rr.ratio,2)})`;
+        els.optCur.style.color = ratingColor(rr.r);
+
+        els.optNew.textContent = `${newRR.r} (Att/Req ${fmt(newRR.ratio,2)})`;
+        els.optNew.style.color = ratingColor(newRR.r);
+
+        els.optDelta.textContent = `${(newAtt-att)>=0?"+":""}${fmt(newAtt-att,3)}`;
+        els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
+
+        // simplified % chart
+        renderOptMixChart(fuels, scen.fuels, unit);
       }
 
-      const newCO2 = totalCO2t(scen.fuels, unit);
-      const newAtt = attainedCII(newCO2, cap, dist, corr);
-      const newRR  = rating(shipType, newAtt, req.required);
+      // store state for PDF
+      lastState = {
+        shipType,
+        shipTypeLabel,
+        year,
+        cap,
+        capType,
+        dist,
+        corr,
+        unit,
+        fuels: fuels.map(f=>({...f})),
+        co2_t,
+        att,
+        req,
+        rr
+      };
 
-      els.optCur.textContent = `${rr.r} (Att/Req ${fmt(rr.ratio,2)})`;
-      els.optCur.style.color = ratingColor(rr.r);
-      els.optNew.textContent = `${newRR.r} (Att/Req ${fmt(newRR.ratio,2)})`;
-      els.optNew.style.color = ratingColor(newRR.r);
-
-      els.optDelta.textContent = `${(newAtt-att)>=0?"+":""}${fmt(newAtt-att,3)}`;
-      els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
-      renderOptPie(co2_t, newCO2);
+      // enable pdf when we have a state and jsPDF exists
+      const pdfOK = !!(window.jspdf && window.jspdf.jsPDF) && chartsEnabled;
+      pdfBtn.disabled = !pdfOK;
 
     } catch(e){
       showErr("JS Error:\n" + (e && e.message ? e.message : String(e)) + "\n\nΆνοιξε F12 → Console για λεπτομέρειες.");
@@ -969,7 +1345,7 @@
     }
   }
 
-  // ---------- Events ----------
+  // ===== Events =====
   ["shipType","year","capacity","distance","corr","fuelUnit"].forEach(id=>{
     document.getElementById(id).addEventListener("input", run);
     document.getElementById(id).addEventListener("change", run);
@@ -991,7 +1367,6 @@
     els.corr.value=1.00;
     els.fuelUnit.value="ton";
 
-    // reset table
     els.fuelBody.innerHTML = "";
     els.fuelBody.appendChild(newRow("HFO", 4200, 3.114));
     els.fuelBody.appendChild(newRow("MGO/MDO", 1300, 3.206));
@@ -1016,7 +1391,7 @@
       ["cii_gauge.png", gaugeChart],
       ["cii_co2_by_fuel.png", barChart],
       ["cii_grade_vs_distance.png", gradeDistChart],
-      ["cii_optimizer.png", optChart],
+      ["cii_fuel_mix_percent.png", optMixChart],
       ["cii_projection.png", lineChart],
     ];
     for (const [name,ch] of list){
@@ -1025,16 +1400,17 @@
     }
   });
 
-  // ---------- Init ----------
-  // add library targets into dropdown (without forcing them into table)
+  pdfBtn.addEventListener("click", async ()=>{
+    if (!lastState) return;
+    await downloadPDFReport(lastState);
+  });
+
+  // ===== Init =====
   refreshOptTargets();
-  // ensure delete buttons work on static rows
   [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
-  // initial compute
   run();
 
 })();
 </script>
 </body>
 </html>
-
