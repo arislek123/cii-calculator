@@ -1,640 +1,659 @@
 <!doctype html>
-<html lang="el">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CII Calculator Dashboard</title>
+  <title>CII Dashboard</title>
 
-  <!-- Charts -->
+  <!-- Charts (optional). App still works without them. -->
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
-  <!-- PDF report (client-side) -->
+  <!-- Vector PDF (NO screenshots). We draw charts directly in PDF using jsPDF primitives. -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <style>
     :root{
-      --bg:#0b1020;
-      --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.70);
-      --border:rgba(255,255,255,.10);
-      --shadow:0 16px 40px rgba(0,0,0,.35);
-      --radius:18px;
+      --bg:#0a0f1e;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.035);
+      --border: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --muted2: rgba(255,255,255,.55);
+      --shadow: 0 18px 44px rgba(0,0,0,.45);
+      --radius: 18px;
+
       --good:#2bd576;
       --good2:#62e6b6;
       --warn:#ffcc00;
       --bad2:#ff7a57;
       --bad:#ff5c7a;
-      --accent: rgba(124,92,255,.95);
-      --accent2: rgba(124,92,255,.55);
-      --glass: rgba(255,255,255,.06);
-      --glass2: rgba(255,255,255,.03);
+
+      --accent1:#7c5cff;
+      --accent2:#5b45d9;
+
+      --chip: rgba(255,255,255,.06);
+      --chipBorder: rgba(255,255,255,.10);
     }
 
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
       background:
-        radial-gradient(1200px 600px at 20% 10%, rgba(124,92,255,.25), transparent 60%),
-        radial-gradient(900px 500px at 80% 20%, rgba(43,213,118,.18), transparent 55%),
-        radial-gradient(1200px 700px at 50% 90%, rgba(255,92,122,.10), transparent 60%),
+        radial-gradient(1200px 700px at 15% 10%, rgba(124,92,255,.26), transparent 60%),
+        radial-gradient(1100px 800px at 80% 15%, rgba(43,213,118,.16), transparent 60%),
+        radial-gradient(1000px 700px at 50% 90%, rgba(255,92,122,.10), transparent 60%),
         var(--bg);
-      color:var(--text);
-      line-height:1.35;
     }
 
-    header{
-      padding:18px 20px 10px;
-      max-width:1280px;
-      margin:0 auto;
+    /* --- Header (professional, minimal) --- */
+    .topbar{
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 18px 20px 12px;
       display:flex;
-      align-items:flex-end;
+      align-items:center;
       justify-content:space-between;
       gap:14px;
     }
-    h1{ margin:0; font-size:22px; letter-spacing:.2px; }
-    .sub{ color:var(--muted); font-size:12px; margin-top:6px; }
+    .brand{
+      display:flex; flex-direction:column; gap:4px;
+    }
+    .brand h1{
+      margin:0;
+      font-size: 20px;
+      letter-spacing: .2px;
+      font-weight: 850;
+    }
+    .brand .sub{
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-    .pillrow{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
-    .pill{
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.04);
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
       padding:8px 10px;
       border-radius:999px;
-      font-size:12px;
-      color:var(--muted);
-      backdrop-filter:blur(10px);
-      white-space:nowrap;
+      border:1px solid var(--chipBorder);
+      background: var(--chip);
+      color: var(--muted);
+      font-size: 12px;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
     }
-    .pill strong{ color:var(--text); font-weight:650; }
+    .dot{
+      width:8px; height:8px; border-radius:999px; background: rgba(255,255,255,.25);
+    }
 
-    main{
-      max-width:1280px;
-      margin:0 auto;
-      padding:10px 20px 26px;
+    button{
+      cursor:pointer;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: filter .15s ease, transform .06s ease;
+    }
+    button:hover{ filter: brightness(1.07); }
+    button:active{ transform: translateY(1px); }
+    button.primary{
+      border:none;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      box-shadow: 0 14px 34px rgba(124,92,255,.26);
+    }
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:none;
+      transform:none;
+    }
+
+    /* --- Layout --- */
+    .wrap{
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 10px 20px 26px;
       display:grid;
-      grid-template-columns:420px 1fr;
-      gap:16px;
+      grid-template-columns: 420px 1fr;
+      gap: 16px;
     }
 
     .card{
       border:1px solid var(--border);
-      background:linear-gradient(180deg, var(--glass), var(--glass2));
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(12px);
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
       overflow:hidden;
     }
-
     .card .hd{
-      padding:14px 16px;
-      border-bottom:1px solid var(--border);
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
       gap:12px;
     }
-    .card .hd .t{ font-weight:800; }
-    .card .hd .d{ color:var(--muted); font-size:12px; margin-top:2px; }
-    .card .bd{ padding:14px 16px; }
-
-    .toolbar{
-      max-width:1280px;
-      margin:8px auto 0;
-      padding:0 20px;
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
     }
-    .banner{
-      border:1px solid rgba(43,213,118,.25);
-      background:rgba(43,213,118,.10);
-      color:rgba(255,255,255,.90);
-      border-radius:14px;
-      padding:10px 14px;
+    .title .t{ font-weight: 850; }
+    .title .d{ font-size: 12px; color: var(--muted); }
+
+    .card .bd{ padding: 14px 16px; }
+
+    .err{
+      max-width: 1320px;
+      margin: 10px auto 0;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border:1px solid rgba(255,92,122,.35);
+      background: rgba(255,92,122,.10);
+      color: rgba(255,255,255,.92);
+      display:none;
+      white-space: pre-wrap;
+    }
+
+    /* --- Forms --- */
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; }
+
+    label{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    input, select{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      outline:none;
+    }
+    input:focus, select:focus{
+      border-color: rgba(124,92,255,.55);
+      box-shadow: 0 0 0 3px rgba(124,92,255,.18);
+    }
+
+    .smallnote{
+      margin-top: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.25;
+    }
+
+    /* --- Fuel table --- */
+    .rowTop{
+      margin-top: 12px;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
     }
-    .banner small{ color:rgba(255,255,255,.75); }
-    .banner .right{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-    .banner .warn{
-      border:1px solid rgba(255,204,0,.25);
-      background:rgba(255,204,0,.10);
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      color:rgba(255,255,255,.85);
+    .rowTop .left{
+      display:flex; flex-direction:column; gap:4px;
     }
+    .rowTop .left b{ font-weight: 850; }
+    .rowTop .left span{ font-size: 12px; color: var(--muted); }
 
-    .errBanner{
-      max-width:1280px;
-      margin:10px auto 0;
-      padding:12px 16px;
-      border-radius:14px;
-      border:1px solid rgba(255,92,122,.35);
-      background:rgba(255,92,122,.10);
-      color:rgba(255,255,255,.90);
-      display:none;
-      white-space:pre-wrap;
-    }
-
-    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-
-    label{ display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--muted); }
-    input, select{
+    .fuel-table{
       width:100%;
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      outline:none;
-      background:rgba(0,0,0,.25);
-      color:var(--text);
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      margin-top: 10px;
     }
-
-    .help{
-      color:rgba(255,255,255,.65);
-      font-size:12px;
-      line-height:1.25;
-      margin-top:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.18);
-      border-radius:14px;
-      padding:10px 12px;
-    }
-    .help b{ color:rgba(255,255,255,.92); }
-
-    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
-    button{
-      cursor:pointer;
-      border:none;
-      border-radius:12px;
-      padding:10px 12px;
-      font-weight:800;
-      background:linear-gradient(135deg, var(--accent), var(--accent2));
-      color:white;
-      box-shadow:0 12px 28px rgba(124,92,255,.25);
-      transition:transform .08s ease, filter .2s ease;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-    }
-    button:hover{ filter:brightness(1.05); }
-    button:active{ transform:translateY(1px); }
-    button:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
-
-    .ghost{
-      background:rgba(255,255,255,.07);
-      box-shadow:none;
-      border:1px solid var(--border);
-      color:var(--text);
-      font-weight:750;
-    }
-    .danger{
-      background:rgba(255,92,122,.12);
-      border:1px solid rgba(255,92,122,.25);
-      box-shadow:none;
-    }
-
-    .kpis{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-    .kpi{
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.18);
-      border-radius:16px;
-      padding:12px;
-    }
-    .kpi .name{ color:var(--muted); font-size:12px; }
-    .kpi .val{ font-size:18px; font-weight:900; margin-top:4px; }
-    .kpi .hint{ color:var(--muted); font-size:12px; margin-top:4px; }
-
-    .fuel-table{ width:100%; border-collapse:separate; border-spacing:0 10px; margin-top:10px; }
     .fuel-table th{
       text-align:left;
-      color:var(--muted);
-      font-weight:650;
-      font-size:12px;
-      padding:0 6px 6px;
+      color: var(--muted2);
+      font-weight: 700;
+      font-size: 12px;
+      padding: 0 6px 6px;
     }
     .fuel-row{
-      background:rgba(0,0,0,.18);
+      background: rgba(0,0,0,.18);
       border:1px solid var(--border);
-      border-radius:14px;
+      border-radius: 14px;
       overflow:hidden;
     }
-    .fuel-table td{ padding:10px 6px; vertical-align:middle; }
-    .fuel-table td:first-child{ padding-left:10px; }
-    .fuel-table td:last-child{ padding-right:10px; }
+    .fuel-table td{ padding: 10px 6px; }
+    .fuel-table td:first-child{ padding-left: 10px; }
+    .fuel-table td:last-child{ padding-right: 10px; }
     .rowbox{
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.22);
-      border-radius:12px;
-      padding:8px 9px;
       width:100%;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(0,0,0,.22);
+      padding: 8px 9px;
+      color: var(--text);
     }
 
-    .mini{ font-size:12px; color:var(--muted); }
-    .hintbox{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.18);
-      border-radius:14px;
-      padding:10px 12px;
-      margin-top:12px;
-      color:var(--muted);
-      font-size:12px;
-    }
+    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+    .btnrow button{ padding: 10px 12px; border-radius: 12px; }
 
+    /* --- KPIs --- */
+    .kpis{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .kpi{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .kpi .n{ font-size: 12px; color: var(--muted); }
+    .kpi .v{ margin-top: 4px; font-weight: 900; font-size: 18px; }
+    .kpi .h{ margin-top: 4px; font-size: 12px; color: var(--muted); }
+
+    /* --- Charts --- */
     .charts{
       display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
     .chartWrap{
       border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.18);
-      border-radius:18px;
+      background: rgba(0,0,0,.18);
+      border-radius: 18px;
       overflow:hidden;
     }
     .chartWrap .chHd{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
       gap:10px;
     }
-    .chartWrap .chHd .ct{ font-weight:800; }
-    .chartWrap .chHd .cd{ color:var(--muted); font-size:12px; margin-top:2px; }
-    .chartWrap .chBd{ padding:10px 12px 12px; }
-    .chart{ height:300px; width:100%; display:flex; align-items:center; justify-content:center; }
-    .chartPlaceholder{
-      border:1px dashed rgba(255,255,255,.18);
-      border-radius:16px;
-      padding:16px 14px;
-      color:rgba(255,255,255,.75);
-      text-align:center;
-      width:100%;
-    }
-    .big{ grid-column:1 / span 2; }
-    .big .chart{ height:320px; }
+    .chartWrap .chHd .ct{ font-weight: 850; }
+    .chartWrap .chHd .cd{ margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .chartWrap .chBd{ padding: 10px 12px 12px; }
 
+    .chart{
+      width:100%;
+      height: 300px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .placeholder{
+      width:100%;
+      border: 1px dashed rgba(255,255,255,.18);
+      border-radius: 16px;
+      padding: 16px 14px;
+      text-align:center;
+      color: rgba(255,255,255,.75);
+      font-size: 12px;
+    }
+
+    .big{ grid-column: 1 / span 2; }
+    .big .chart{ height: 320px; }
+
+    /* Optimizer */
     .optBox{
       display:grid;
-      grid-template-columns:1.2fr .8fr;
-      gap:10px;
-      margin-bottom:10px;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 10px;
+      margin-bottom: 10px;
     }
     .optResults{
       display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-top:10px;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
     }
     .optCard{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.18);
-      border-radius:14px;
-      padding:10px 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      border-radius: 14px;
+      padding: 10px 12px;
     }
-    .optCard .h{ color:var(--muted); font-size:12px; }
-    .optCard .v{ font-weight:900; margin-top:4px; font-size:14px; }
+    .optCard .h{ color: var(--muted); font-size: 12px; }
+    .optCard .v{ margin-top: 4px; font-weight: 900; font-size: 14px; }
 
-    .rowActions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      margin-top:12px;
-    }
+    .mini{ color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.25; }
 
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.05);
-      color:rgba(255,255,255,.85);
-    }
-
-    @media (max-width:1060px){
-      main{ grid-template-columns:1fr; }
-      .charts{ grid-template-columns:1fr; }
-      .big{ grid-column:auto; }
-      .optBox{ grid-template-columns:1fr; }
+    @media (max-width: 1080px){
+      .wrap{ grid-template-columns: 1fr; }
+      .charts{ grid-template-columns: 1fr; }
+      .big{ grid-column: auto; }
+      .optBox{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
-<header>
-  <div>
-    <h1>CII Dashboard — Attained / Required / Rating</h1>
-    <div class="sub">Υπολογισμός Attained/Required CII, rating A–E, charts και “what-if” fuel switch.</div>
-  </div>
-  <div class="pillrow">
-    <div class="pill">Μονάδα: <strong>gCO₂ / (capacity·nm)</strong></div>
-    <div class="pill">Capacity: <strong>DWT ή GT</strong></div>
-    <div class="pill">Charts: <strong>ECharts</strong></div>
-  </div>
-</header>
-
-<div class="toolbar">
-  <div class="banner">
-    <div>
-      <b>Quick tips:</b> βάλε σωστά <b>annual distance</b> + <b>annual fuel</b> (ίδιες χρονικές βάσεις).
-      <small>Η απόσταση επηρεάζει το denominator (capacity·nm), το fuel τις εκπομπές.</small>
+  <div class="topbar">
+    <div class="brand">
+      <h1>CII Dashboard</h1>
+      <div class="sub">Attained CII, Required CII, Rating A–E, Optimization and Reporting</div>
     </div>
-    <div class="right">
-      <span id="chartsState" class="warn">Checking charts…</span>
-      <button id="pdfBtn" class="ghost" type="button" title="Κατεβάζει PDF report με KPIs & charts" disabled>📄 Download PDF</button>
+    <div class="actions">
+      <div class="chip" id="chipCharts"><span class="dot" id="dotCharts"></span><span id="txtCharts">Charts: Checking…</span></div>
+      <button class="primary" id="btnPDF" type="button">📄 Download PDF Report</button>
+      <button id="btnPNG" type="button">🖼️ Export PNG</button>
     </div>
   </div>
-</div>
 
-<div id="errBanner" class="errBanner"></div>
+  <div id="err" class="err"></div>
 
-<main>
-  <!-- LEFT -->
-  <section class="card" id="inputsCard">
-    <div class="hd">
-      <div>
-        <div class="t">Είσοδοι</div>
-        <div class="d">Ship type, capacity, distance, fuel consumption</div>
-      </div>
-      <span class="badge" id="ratingBadge">—</span>
-    </div>
-
-    <div class="bd">
-      <div class="grid2">
-        <label>
-          Ship type
-          <select id="shipType">
-            <option value="bulk">Bulk carrier (DWT)</option>
-            <option value="tanker">Tanker (DWT)</option>
-            <option value="container">Container ship (DWT)</option>
-            <option value="gas_65p">Gas carrier ≥ 65,000 DWT (DWT)</option>
-            <option value="gas_65m">Gas carrier &lt; 65,000 DWT (DWT)</option>
-            <option value="general_20p">General cargo ≥ 20,000 DWT (DWT)</option>
-            <option value="general_20m">General cargo &lt; 20,000 DWT (DWT)</option>
-            <option value="refrig">Refrigerated cargo carrier (DWT)</option>
-            <option value="combo">Combination carrier (DWT)</option>
-            <option value="lng_100p">LNG carrier ≥ 100,000 DWT (DWT)</option>
-            <option value="lng_100m">LNG carrier &lt; 100,000 DWT (DWT)</option>
-            <option value="roro_vc">Ro-ro cargo (Vehicle Carrier) (GT)</option>
-            <option value="roro_cargo">Ro-ro cargo ship (GT)</option>
-            <option value="roro_pax">Ro-ro passenger ship (GT)</option>
-            <option value="cruise">Cruise passenger ship (GT)</option>
-            <option value="hsc">High-speed craft (GT)</option>
-          </select>
-        </label>
-
-        <label>
-          Reporting year
-          <select id="year">
-            <option>2023</option>
-            <option selected>2024</option>
-            <option>2025</option>
-            <option>2026</option>
-            <option>2027</option>
-            <option>2028</option>
-            <option>2029</option>
-            <option>2030</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="grid2" style="margin-top:12px;">
-        <label>
-          Capacity (DWT ή GT)
-          <input id="capacity" type="number" min="1" step="1" value="62000" />
-        </label>
-        <label>
-          Annual distance travelled (nm)
-          <input id="distance" type="number" min="1" step="1" value="60045" />
-        </label>
-      </div>
-
-      <div class="grid2" style="margin-top:12px;">
-        <label>
-          Correction factor (προαιρετικό) ×
-          <input id="corr" type="number" min="0" step="0.01" value="1.00" />
-        </label>
-        <label>
-          Μονάδα consumption
-          <select id="fuelUnit">
-            <option value="ton">tonnes (t)</option>
-            <option value="kg" selected>kg</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="help" id="sanityHelp">
-        <b>Sanity check:</b>
-        <span id="sanityText">—</span>
-      </div>
-
-      <div class="rowActions">
-        <div>
-          <div style="font-weight:850;">Καύσιμα & CF (tCO₂ / t fuel)</div>
-          <div class="mini">Δώσε annual consumption. Το CF μπορείς να το αλλάξεις αν έχεις επίσημες τιμές.</div>
+  <div class="wrap">
+    <!-- LEFT: Inputs -->
+    <section class="card">
+      <div class="hd">
+        <div class="title">
+          <div class="t">Inputs</div>
+          <div class="d">Ship, year, capacity, distance, fuels</div>
         </div>
-        <button class="ghost" id="addFuel" type="button">+ Fuel row</button>
+        <div class="chip" id="chipRating"><span class="dot"></span><span id="txtRating">Rating: —</span></div>
       </div>
 
-      <!-- STATIC default rows in HTML -->
-      <table class="fuel-table">
-        <thead>
-          <tr>
-            <th style="width:38%;">Fuel</th>
-            <th style="width:28%;">Consumption</th>
-            <th style="width:22%;">CF</th>
-            <th style="width:12%;">&nbsp;</th>
-          </tr>
-        </thead>
-        <tbody id="fuelBody">
-          <tr class="fuel-row">
-            <td><input class="rowbox fuel-name" value="HFO" /></td>
-            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="4200000" /></td>
-            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.114" /></td>
-            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
-          </tr>
-          <tr class="fuel-row">
-            <td><input class="rowbox fuel-name" value="MGO/MDO" /></td>
-            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="1300000" /></td>
-            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.206" /></td>
-            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
-          </tr>
-          <tr class="fuel-row">
-            <td><input class="rowbox fuel-name" value="LFO" /></td>
-            <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="0" /></td>
-            <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.151" /></td>
-            <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="bd">
+        <div class="grid2">
+          <label>
+            Ship type
+            <select id="shipType">
+              <option value="bulk">Bulk carrier (DWT)</option>
+              <option value="tanker">Tanker (DWT)</option>
+              <option value="container">Container ship (DWT)</option>
+              <option value="gas_65p">Gas carrier ≥ 65,000 DWT (DWT)</option>
+              <option value="gas_65m">Gas carrier &lt; 65,000 DWT (DWT)</option>
+              <option value="general_20p">General cargo ≥ 20,000 DWT (DWT)</option>
+              <option value="general_20m">General cargo &lt; 20,000 DWT (DWT)</option>
+              <option value="refrig">Refrigerated cargo carrier (DWT)</option>
+              <option value="combo">Combination carrier (DWT)</option>
+              <option value="lng_100p">LNG carrier ≥ 100,000 DWT (DWT)</option>
+              <option value="lng_100m">LNG carrier &lt; 100,000 DWT (DWT)</option>
+              <option value="roro_vc">Ro-ro cargo (Vehicle Carrier) (GT)</option>
+              <option value="roro_cargo">Ro-ro cargo ship (GT)</option>
+              <option value="roro_pax">Ro-ro passenger ship (GT)</option>
+              <option value="cruise">Cruise passenger ship (GT)</option>
+              <option value="hsc">High-speed craft (GT)</option>
+            </select>
+          </label>
 
-      <div class="btnrow">
-        <button id="calcBtn" type="button">🧮 Υπολόγισε</button>
-        <button class="ghost" id="demoBtn" type="button">✨ Demo</button>
-        <button class="ghost" id="exportBtn" type="button">🖼️ Export charts PNG</button>
-      </div>
-
-      <div class="hintbox">
-        Tip: Αν θες “καθαρό” αποτέλεσμα χωρίς διορθώσεις, άφησε Correction factor = <b>1.00</b>.
-        Αν το annual distance είναι πολύ μικρό, το Attained “φουσκώνει”.
-      </div>
-    </div>
-  </section>
-
-  <!-- RIGHT -->
-  <section class="card" id="resultsCard">
-    <div class="hd">
-      <div>
-        <div class="t">Αποτελέσματα & Διαγράμματα</div>
-        <div class="d">Gauge, CO₂ breakdown, grade-vs-distance, optimizer, projection</div>
-      </div>
-      <div class="mini" id="lastRun">—</div>
-    </div>
-
-    <div class="bd">
-      <div class="kpis">
-        <div class="kpi">
-          <div class="name">Total CO₂ emissions</div>
-          <div class="val" id="kpiCO2">—</div>
-          <div class="hint">Σύνολο (tCO₂)</div>
+          <label>
+            Reporting year
+            <select id="year">
+              <option>2023</option>
+              <option selected>2024</option>
+              <option>2025</option>
+              <option>2026</option>
+              <option>2027</option>
+              <option>2028</option>
+              <option>2029</option>
+              <option>2030</option>
+            </select>
+          </label>
         </div>
-        <div class="kpi">
-          <div class="name">Attained CII</div>
-          <div class="val" id="kpiAtt">—</div>
-          <div class="hint">gCO₂ / (capacity·nm)</div>
-        </div>
-        <div class="kpi">
-          <div class="name">Required CII</div>
-          <div class="val" id="kpiReq">—</div>
-          <div class="hint">Reference × (1−Z)</div>
-        </div>
-        <div class="kpi">
-          <div class="name">CII Rating</div>
-          <div class="val" id="kpiRating">—</div>
-          <div class="hint" id="kpiBand">—</div>
-        </div>
-      </div>
 
-      <div class="charts">
-        <div class="chartWrap">
-          <div class="chHd">
-            <div>
-              <div class="ct">Rating Gauge</div>
-              <div class="cd">Attained/Required + bands A–E</div>
-            </div>
+        <div class="grid2" style="margin-top:12px;">
+          <label>
+            Capacity (DWT or GT)
+            <input id="capacity" type="number" min="1" step="1" value="62000" />
+          </label>
+          <label>
+            Annual distance (nm)
+            <input id="distance" type="number" min="1" step="1" value="60045" />
+          </label>
+        </div>
+
+        <div class="grid2" style="margin-top:12px;">
+          <label>
+            Correction factor (optional)
+            <input id="corr" type="number" min="0" step="0.01" value="1.00" />
+          </label>
+          <label>
+            Consumption unit
+            <select id="fuelUnit">
+              <option value="ton" selected>tonnes (t)</option>
+              <option value="kg">kg</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="smallnote" id="noteSanity">
+          Data check: Use the same yearly basis for <b>distance</b> and <b>fuel</b>.
+          Very low annual distance often increases Attained CII.
+        </div>
+
+        <div class="rowTop">
+          <div class="left">
+            <b>Fuels & CF</b>
+            <span>CF unit: tCO₂ / t fuel</span>
           </div>
-          <div class="chBd">
-            <div id="gauge" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+          <button id="addFuel" type="button">＋ Add fuel row</button>
+        </div>
+
+        <table class="fuel-table">
+          <thead>
+            <tr>
+              <th style="width:38%;">Fuel</th>
+              <th style="width:28%;">Consumption</th>
+              <th style="width:22%;">CF</th>
+              <th style="width:12%;">&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody id="fuelBody">
+            <tr class="fuel-row">
+              <td><input class="rowbox fuel-name" value="HFO" /></td>
+              <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="4200" /></td>
+              <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.114" /></td>
+              <td style="text-align:right;"><button class="del" type="button" title="Remove" style="padding:8px 10px;">✕</button></td>
+            </tr>
+            <tr class="fuel-row">
+              <td><input class="rowbox fuel-name" value="MGO/MDO" /></td>
+              <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="1300" /></td>
+              <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.206" /></td>
+              <td style="text-align:right;"><button class="del" type="button" title="Remove" style="padding:8px 10px;">✕</button></td>
+            </tr>
+            <tr class="fuel-row">
+              <td><input class="rowbox fuel-name" value="LFO" /></td>
+              <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="0" /></td>
+              <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="3.151" /></td>
+              <td style="text-align:right;"><button class="del" type="button" title="Remove" style="padding:8px 10px;">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="btnrow">
+          <button class="primary" id="calcBtn" type="button">🧮 Calculate</button>
+          <button id="demoBtn" type="button">✨ Demo</button>
+        </div>
+
+        <div class="smallnote">
+          Tip: If you do not use correction factors, keep <b>Correction factor = 1.00</b>.
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Results -->
+    <section class="card">
+      <div class="hd">
+        <div class="title">
+          <div class="t">Results & Charts</div>
+          <div class="d">Gauge, breakdown, distance impact, optimizer, projections</div>
+        </div>
+        <div class="mini" id="txtUpdated">Updated: —</div>
+      </div>
+
+      <div class="bd">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="n">Total CO₂ emissions</div>
+            <div class="v" id="kpiCO2">—</div>
+            <div class="h">tCO₂</div>
+          </div>
+          <div class="kpi">
+            <div class="n">Attained CII</div>
+            <div class="v" id="kpiAtt">—</div>
+            <div class="h">gCO₂ / (capacity·nm)</div>
+          </div>
+          <div class="kpi">
+            <div class="n">Required CII</div>
+            <div class="v" id="kpiReq">—</div>
+            <div class="h">Reference × (1−Z)</div>
+          </div>
+          <div class="kpi">
+            <div class="n">CII Rating</div>
+            <div class="v" id="kpiRating">—</div>
+            <div class="h" id="kpiBand">—</div>
           </div>
         </div>
 
-        <div class="chartWrap">
-          <div class="chHd">
-            <div>
-              <div class="ct">CO₂ ανά καύσιμο</div>
-              <div class="cd">Όλα τα fuels που υπάρχουν στον πίνακα</div>
-            </div>
-          </div>
-          <div class="chBd">
-            <div id="bar" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
-          </div>
-        </div>
-
-        <div class="chartWrap">
-          <div class="chHd">
-            <div>
-              <div class="ct">Grade vs Distance</div>
-              <div class="cd">Πότε αλλάζει το grade αν αλλάξει η απόσταση</div>
-            </div>
-          </div>
-          <div class="chBd">
-            <div id="gradeDist" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
-          </div>
-        </div>
-
-        <div class="chartWrap">
-          <div class="chHd">
-            <div>
-              <div class="ct">Fuel Switch Optimizer</div>
-              <div class="cd">What-if αλλαγή μίγματος + απλό chart μίγματος (%)</div>
-            </div>
-          </div>
-          <div class="chBd">
-            <div class="optBox">
-              <label>
-                Στόχος καυσίμου
-                <select id="optTarget"></select>
-              </label>
-              <label>
-                Μεταφορά % προς στόχο
-                <input id="optPct" type="number" min="0" max="100" step="1" value="30" />
-              </label>
-            </div>
-
-            <div class="mini" id="optTopSuggest">—</div>
-
-            <div class="optResults">
-              <div class="optCard"><div class="h">Current rating</div><div class="v" id="optCur">—</div></div>
-              <div class="optCard"><div class="h">After switch rating</div><div class="v" id="optNew">—</div></div>
-              <div class="optCard"><div class="h">Δ Attained CII</div><div class="v" id="optDelta">—</div></div>
-              <div class="optCard"><div class="h">CO₂ change</div><div class="v" id="optCO2">—</div></div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <!-- Simplified: 100% stacked mix chart (Current vs After) -->
-              <div id="optMixChart" class="chart" style="height:240px;">
-                <div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div>
+        <div class="charts">
+          <div class="chartWrap">
+            <div class="chHd">
+              <div>
+                <div class="ct">Rating Gauge</div>
+                <div class="cd">Attained / Required and A–E bands</div>
               </div>
             </div>
-
-            <div class="help" style="margin-top:10px;">
-              <b>Πώς παίρνει το %;</b> Μεταφέρει το Χ% της συνολικής κατανάλωσης από τα καύσιμα με μεγαλύτερο CF πρώτα, προς το target.
+            <div class="chBd">
+              <div id="chGauge" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
             </div>
           </div>
-        </div>
 
-        <div class="chartWrap big">
-          <div class="chHd">
-            <div>
-              <div class="ct">Projection αυστηροποίησης</div>
-              <div class="cd">Required CII ανά έτος vs σταθερό Attained</div>
+          <div class="chartWrap">
+            <div class="chHd">
+              <div>
+                <div class="ct">CO₂ by fuel</div>
+                <div class="cd">Breakdown based on consumption × CF</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div id="chBar" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
             </div>
           </div>
-          <div class="chBd">
-            <div id="line" class="chart"><div class="chartPlaceholder">Charts disabled (ECharts not loaded)</div></div>
+
+          <div class="chartWrap">
+            <div class="chHd">
+              <div>
+                <div class="ct">Grade vs Distance</div>
+                <div class="cd">How rating changes if distance changes (same emissions)</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div id="chGradeDist" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
+            </div>
           </div>
+
+          <div class="chartWrap">
+            <div class="chHd">
+              <div>
+                <div class="ct">Fuel Switch Optimizer</div>
+                <div class="cd">Switch % from worst CF fuels to target fuel</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div class="optBox">
+                <label>
+                  Target fuel
+                  <select id="optTarget"></select>
+                </label>
+                <label>
+                  Switch percentage (%)
+                  <input id="optPct" type="number" min="0" max="100" step="1" value="30" />
+                </label>
+              </div>
+
+              <div class="mini" id="optSuggest">—</div>
+
+              <div class="optResults">
+                <div class="optCard"><div class="h">Current</div><div class="v" id="optCur">—</div></div>
+                <div class="optCard"><div class="h">After switch</div><div class="v" id="optNew">—</div></div>
+                <div class="optCard"><div class="h">Δ Attained CII</div><div class="v" id="optDelta">—</div></div>
+                <div class="optCard"><div class="h">CO₂ change</div><div class="v" id="optCO2">—</div></div>
+              </div>
+
+              <!-- User-friendly chart (simple): Current vs After fuel shares (100% stacked) -->
+              <div style="margin-top:10px;">
+                <div id="chMix" class="chart" style="height:240px;"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chartWrap big">
+            <div class="chHd">
+              <div>
+                <div class="ct">Projection (2023–2030)</div>
+                <div class="cd">Required CII by year vs constant Attained</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div id="chProj" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
+            </div>
+          </div>
+
+          <!-- 2 additional charts BELOW (as requested) -->
+          <div class="chartWrap big">
+            <div class="chHd">
+              <div>
+                <div class="ct">Attained/Required vs Distance</div>
+                <div class="cd">Continuous ratio curve (easier to interpret than grades)</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div id="chRatioDist" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
+            </div>
+          </div>
+
+          <div class="chartWrap big">
+            <div class="chHd">
+              <div>
+                <div class="ct">Optimizer Sensitivity</div>
+                <div class="cd">Attained/Required after switching 0–100% to target fuel</div>
+              </div>
+            </div>
+            <div class="chBd">
+              <div id="chOptCurve" class="chart"><div class="placeholder">Charts unavailable (CDN blocked). KPI + PDF still work.</div></div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
-  </section>
-</main>
+    </section>
+  </div>
 
 <script>
 (() => {
-  // ===== UI helpers =====
-  const errBanner = document.getElementById("errBanner");
-  const chartsState = document.getElementById("chartsState");
-  const pdfBtn = document.getElementById("pdfBtn");
-  const lastRun = document.getElementById("lastRun");
-  const ratingBadge = document.getElementById("ratingBadge");
-  const sanityText = document.getElementById("sanityText");
-
+  // =======================
+  // Error handling UI
+  // =======================
+  const elErr = document.getElementById("err");
   function showErr(msg){
-    errBanner.style.display = "block";
-    errBanner.textContent = msg;
+    elErr.style.display = "block";
+    elErr.textContent = msg;
   }
   function hideErr(){
-    errBanner.style.display = "none";
-    errBanner.textContent = "";
+    elErr.style.display = "none";
+    elErr.textContent = "";
   }
 
-  // ===== Tables & factors (same functionality, kept) =====
+  // =======================
+  // Tables / parameters (kept)
+  // =======================
   const REF = {
     bulk:        { piece: (cap)=>({a:4745, c:0.622, capAdj: Math.min(cap, 279000)}) },
     tanker:      { piece: (cap)=>({a:5247, c:0.610, capAdj: cap}) },
@@ -698,7 +717,9 @@
     { name:"Hydrogen (indicative)", cf:0.00 },
   ];
 
-  // ===== Formatting =====
+  // =======================
+  // Helpers
+  // =======================
   const css = getComputedStyle(document.documentElement);
   const COLORS = {
     A: css.getPropertyValue("--good").trim(),
@@ -709,68 +730,11 @@
   };
   const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
   const roundTo = (n,d=2)=>{ const p=10**d; return Math.round(n*p)/p; };
-  const fmt = (n,d=3)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:d, minimumFractionDigits:d}) : "—";
-  const fmt0 = (n)=> Number.isFinite(n) ? n.toLocaleString("el-GR",{maximumFractionDigits:0}) : "—";
+  const fmt = (n,d=3)=> Number.isFinite(n) ? n.toLocaleString("en-US",{maximumFractionDigits:d, minimumFractionDigits:d}) : "—";
+  const fmt0 = (n)=> Number.isFinite(n) ? n.toLocaleString("en-US",{maximumFractionDigits:0}) : "—";
   const ratingColor = (r)=> COLORS[r] ?? COLORS.E;
   const ratingToNum = (r)=> ({A:1,B:2,C:3,D:4,E:5})[r] ?? 5;
   const numToRating = (n)=> ({1:"A",2:"B",3:"C",4:"D",5:"E"})[n] ?? "E";
-
-  // ===== DOM =====
-  const els = {
-    shipType: document.getElementById("shipType"),
-    year: document.getElementById("year"),
-    capacity: document.getElementById("capacity"),
-    distance: document.getElementById("distance"),
-    corr: document.getElementById("corr"),
-    fuelUnit: document.getElementById("fuelUnit"),
-    fuelBody: document.getElementById("fuelBody"),
-    addFuel: document.getElementById("addFuel"),
-    calcBtn: document.getElementById("calcBtn"),
-    demoBtn: document.getElementById("demoBtn"),
-    exportBtn: document.getElementById("exportBtn"),
-
-    kpiCO2: document.getElementById("kpiCO2"),
-    kpiAtt: document.getElementById("kpiAtt"),
-    kpiReq: document.getElementById("kpiReq"),
-    kpiRating: document.getElementById("kpiRating"),
-    kpiBand: document.getElementById("kpiBand"),
-
-    optTarget: document.getElementById("optTarget"),
-    optPct: document.getElementById("optPct"),
-    optTopSuggest: document.getElementById("optTopSuggest"),
-    optCur: document.getElementById("optCur"),
-    optNew: document.getElementById("optNew"),
-    optDelta: document.getElementById("optDelta"),
-    optCO2: document.getElementById("optCO2"),
-  };
-
-  function wireRow(tr){
-    const del = tr.querySelector(".del");
-    if (del) del.addEventListener("click", ()=>{ tr.remove(); refreshOptTargets(); run(); });
-    tr.querySelectorAll("input").forEach(inp => inp.addEventListener("input", ()=>{ refreshOptTargets(); run(); }));
-  }
-  [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
-
-  function newRow(name="New fuel", cons=0, cf=3.114){
-    const tr = document.createElement("tr");
-    tr.className = "fuel-row";
-    tr.innerHTML = `
-      <td><input class="rowbox fuel-name" value="${String(name).replaceAll('"','&quot;')}" /></td>
-      <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons}" /></td>
-      <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf}" /></td>
-      <td style="text-align:right;"><button class="ghost del" type="button" style="padding:8px 10px;">✕</button></td>
-    `;
-    wireRow(tr);
-    return tr;
-  }
-
-  function getFuels(){
-    return [...els.fuelBody.querySelectorAll("tr")].map(r => ({
-      name: (r.querySelector(".fuel-name")?.value || "").trim() || "Fuel",
-      cons: Number(r.querySelector(".fuel-cons")?.value || 0),
-      cf: Number(r.querySelector(".fuel-cf")?.value || 0),
-    }));
-  }
 
   function consToTon(cons, unit){ return unit==="kg" ? cons/1000 : cons; }
 
@@ -809,34 +773,119 @@
     return {r, ratio, dd:{d1,d2,d3,d4}};
   }
 
-  // ===== Charts =====
-  const chartsEnabled = typeof window.echarts !== "undefined";
-  chartsState.textContent = chartsEnabled ? "Charts: OK" : "Charts: blocked";
-  chartsState.style.borderColor = chartsEnabled ? "rgba(43,213,118,.25)" : "rgba(255,92,122,.35)";
-  chartsState.style.background = chartsEnabled ? "rgba(43,213,118,.10)" : "rgba(255,92,122,.10)";
-  chartsState.style.color = "rgba(255,255,255,.85)";
-  pdfBtn.disabled = !chartsEnabled; // PDF uses chart screenshots (still can make text-only, but user asked easy)
+  // =======================
+  // DOM
+  // =======================
+  const els = {
+    chipCharts: document.getElementById("chipCharts"),
+    dotCharts: document.getElementById("dotCharts"),
+    txtCharts: document.getElementById("txtCharts"),
 
-  let gaugeChart, barChart, gradeDistChart, optMixChart, lineChart;
+    btnPDF: document.getElementById("btnPDF"),
+    btnPNG: document.getElementById("btnPNG"),
+
+    shipType: document.getElementById("shipType"),
+    year: document.getElementById("year"),
+    capacity: document.getElementById("capacity"),
+    distance: document.getElementById("distance"),
+    corr: document.getElementById("corr"),
+    fuelUnit: document.getElementById("fuelUnit"),
+
+    fuelBody: document.getElementById("fuelBody"),
+    addFuel: document.getElementById("addFuel"),
+    calcBtn: document.getElementById("calcBtn"),
+    demoBtn: document.getElementById("demoBtn"),
+
+    kpiCO2: document.getElementById("kpiCO2"),
+    kpiAtt: document.getElementById("kpiAtt"),
+    kpiReq: document.getElementById("kpiReq"),
+    kpiRating: document.getElementById("kpiRating"),
+    kpiBand: document.getElementById("kpiBand"),
+
+    chipRating: document.getElementById("chipRating"),
+    txtRating: document.getElementById("txtRating"),
+
+    txtUpdated: document.getElementById("txtUpdated"),
+
+    optTarget: document.getElementById("optTarget"),
+    optPct: document.getElementById("optPct"),
+    optSuggest: document.getElementById("optSuggest"),
+    optCur: document.getElementById("optCur"),
+    optNew: document.getElementById("optNew"),
+    optDelta: document.getElementById("optDelta"),
+    optCO2: document.getElementById("optCO2"),
+  };
+
+  function wireRow(tr){
+    const del = tr.querySelector(".del");
+    if (del) del.addEventListener("click", ()=>{ tr.remove(); refreshOptTargets(); run(); });
+    tr.querySelectorAll("input").forEach(inp => inp.addEventListener("input", ()=>{ refreshOptTargets(); run(); }));
+  }
+  [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
+
+  function newRow(name="New fuel", cons=0, cf=3.114){
+    const tr = document.createElement("tr");
+    tr.className = "fuel-row";
+    tr.innerHTML = `
+      <td><input class="rowbox fuel-name" value="${String(name).replaceAll('"','&quot;')}" /></td>
+      <td><input class="rowbox fuel-cons" type="number" min="0" step="0.01" value="${cons}" /></td>
+      <td><input class="rowbox fuel-cf" type="number" min="0" step="0.001" value="${cf}" /></td>
+      <td style="text-align:right;"><button class="del" type="button" title="Remove" style="padding:8px 10px;">✕</button></td>
+    `;
+    wireRow(tr);
+    return tr;
+  }
+
+  function getFuels(){
+    return [...els.fuelBody.querySelectorAll("tr")].map(r => ({
+      name: (r.querySelector(".fuel-name")?.value || "").trim() || "Fuel",
+      cons: Number(r.querySelector(".fuel-cons")?.value || 0),
+      cf: Number(r.querySelector(".fuel-cf")?.value || 0),
+    }));
+  }
+
+  // =======================
+  // Charts (optional)
+  // =======================
+  const chartsEnabled = typeof window.echarts !== "undefined";
+  if (chartsEnabled){
+    els.txtCharts.textContent = "Charts: OK";
+    els.dotCharts.style.background = "rgba(43,213,118,.9)";
+    els.chipCharts.style.borderColor = "rgba(43,213,118,.25)";
+    els.chipCharts.style.background = "rgba(43,213,118,.08)";
+    els.chipCharts.style.color = "rgba(255,255,255,.85)";
+  } else {
+    els.txtCharts.textContent = "Charts: Unavailable";
+    els.dotCharts.style.background = "rgba(255,92,122,.9)";
+    els.chipCharts.style.borderColor = "rgba(255,92,122,.35)";
+    els.chipCharts.style.background = "rgba(255,92,122,.08)";
+    els.chipCharts.style.color = "rgba(255,255,255,.85)";
+  }
+
+  let chGauge, chBar, chGradeDist, chMix, chProj, chRatioDist, chOptCurve;
 
   function ensureCharts(){
     if (!chartsEnabled) return;
-    if (gaugeChart) return;
+    if (chGauge) return;
 
-    gaugeChart = echarts.init(document.getElementById("gauge"));
-    barChart = echarts.init(document.getElementById("bar"));
-    gradeDistChart = echarts.init(document.getElementById("gradeDist"));
-    optMixChart = echarts.init(document.getElementById("optMixChart"));
-    lineChart = echarts.init(document.getElementById("line"));
+    chGauge     = echarts.init(document.getElementById("chGauge"));
+    chBar       = echarts.init(document.getElementById("chBar"));
+    chGradeDist = echarts.init(document.getElementById("chGradeDist"));
+    chMix       = echarts.init(document.getElementById("chMix"));
+    chProj      = echarts.init(document.getElementById("chProj"));
+    chRatioDist = echarts.init(document.getElementById("chRatioDist"));
+    chOptCurve  = echarts.init(document.getElementById("chOptCurve"));
 
     window.addEventListener("resize", ()=>{
-      gaugeChart.resize(); barChart.resize(); gradeDistChart.resize(); optMixChart.resize(); lineChart.resize();
+      chGauge.resize(); chBar.resize(); chGradeDist.resize(); chMix.resize();
+      chProj.resize(); chRatioDist.resize(); chOptCurve.resize();
     });
   }
 
-  function renderGauge(ratio, r, dd){
+  function renderGauge(ratio, rr){
     if (!chartsEnabled) return;
     ensureCharts();
+    const dd = rr.dd;
     const maxRatio = Math.max(1.6, dd.d4*1.15);
     const segs = [
       [dd.d1/maxRatio, ratingColor("A")],
@@ -846,16 +895,21 @@
       [1, ratingColor("E")]
     ].map(([p,c])=>[clamp(p,0,1), c]);
 
-    gaugeChart.setOption({
+    chGauge.setOption({
       backgroundColor:"transparent",
-      tooltip:{ formatter:(p)=> `Att/Req: <b>${fmt(p.value,3)}</b><br/>Rating: <b>${r}</b>` },
       series:[{
         type:"gauge",
         min:0, max:maxRatio, splitNumber:6,
         axisLine:{ lineStyle:{ width:16, color:segs } },
         pointer:{ length:"62%", width:6 },
         axisLabel:{ distance:18, color:"rgba(255,255,255,.75)", formatter:(v)=> String(roundTo(v,2)) },
-        detail:{ valueAnimation:true, fontSize:26, offsetCenter:[0,"20%"], color:"rgba(255,255,255,.92)", formatter:(v)=> fmt(v,3) },
+        detail:{
+          valueAnimation:true,
+          fontSize:26,
+          offsetCenter:[0,"20%"],
+          color:"rgba(255,255,255,.92)",
+          formatter:(v)=> fmt(v,3)
+        },
         data:[{ value: ratio, name:"Attained / Required" }]
       }]
     });
@@ -871,19 +925,24 @@
       return Number(co2.toFixed(3));
     });
 
-    barChart.setOption({
+    chBar.setOption({
       backgroundColor:"transparent",
       tooltip:{ trigger:"axis", axisPointer:{type:"shadow"} },
-      grid:{ left:54, right:18, top:18, bottom:56 },
-      xAxis:{ type:"category", data:names, axisLabel:{ color:"rgba(255,255,255,.75)", rotate:22, interval:0 },
-              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
-      yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
-              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
-      series:[{ type:"bar", data:values, barWidth:"55%", itemStyle:{ borderRadius:[10,10,6,6] }, barMinHeight:2 }]
+      grid:{ left:56, right:18, top:18, bottom:64 },
+      xAxis:{
+        type:"category", data:names,
+        axisLabel:{ color:"rgba(255,255,255,.75)", rotate:22, interval:0 },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } }
+      },
+      series:[{ type:"bar", data:values, barWidth:"58%", barMinHeight:2, itemStyle:{ borderRadius:[10,10,6,6] } }]
     });
   }
 
-  // Keep your grade chart (discrete A–E) but make x axis numeric for better reading
   function renderGradeVsDistance(shipType, cap, corr, fuels, unit, required){
     if (!chartsEnabled) return;
     ensureCharts();
@@ -896,11 +955,11 @@
       const factor = 0.5 + i*(1/24);
       const dist = baseDist*factor;
       const att = attainedCII(co2_t, cap, dist, corr);
-      const rr = rating(shipType, att, required);
-      pts.push({dist, gradeNum:ratingToNum(rr.r), r:rr.r, ratio:rr.ratio});
+      const r = rating(shipType, att, required);
+      pts.push({dist, gradeNum:ratingToNum(r.r), r:r.r, ratio:r.ratio});
     }
 
-    gradeDistChart.setOption({
+    chGradeDist.setOption({
       backgroundColor:"transparent",
       tooltip:{
         trigger:"axis",
@@ -924,7 +983,6 @@
         axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
       },
       series:[{
-        name:"Grade",
         type:"line",
         step:"middle",
         data: pts.map(p=> [p.dist, p.gradeNum]),
@@ -933,6 +991,8 @@
         areaStyle:{ opacity:0.06 }
       }]
     });
+
+    return pts;
   }
 
   function renderProjection(cii_ref, attained){
@@ -942,23 +1002,30 @@
     const reqSeries = years.map(y=> Number((cii_ref*(100-Z(y))/100).toFixed(4)));
     const attSeries = years.map(()=> Number(attained.toFixed(4)));
 
-    lineChart.setOption({
+    chProj.setOption({
       backgroundColor:"transparent",
       tooltip:{ trigger:"axis" },
       legend:{ top:10, textStyle:{ color:"rgba(255,255,255,.75)" } },
-      grid:{ left:54, right:18, top:44, bottom:40 },
-      xAxis:{ type:"category", data:years, axisLabel:{ color:"rgba(255,255,255,.75)" },
-              axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } } },
-      yAxis:{ type:"value", axisLabel:{ color:"rgba(255,255,255,.75)" },
-              splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } } },
+      grid:{ left:56, right:18, top:44, bottom:40 },
+      xAxis:{
+        type:"category", data:years,
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } }
+      },
       series:[
         { name:"Required CII", type:"line", smooth:true, data:reqSeries, symbolSize:7, lineStyle:{ width:3 } },
-        { name:"Attained CII (σταθερό)", type:"line", smooth:true, data:attSeries, symbolSize:7, lineStyle:{ width:2, type:"dashed" } },
+        { name:"Attained CII (constant)", type:"line", smooth:true, data:attSeries, symbolSize:7, lineStyle:{ width:2, type:"dashed" } },
       ]
     });
+
+    return {years, reqSeries, attSeries};
   }
 
-  // ===== Optimizer =====
   function buildTargets(fuels){
     const seen=new Set();
     const t=[];
@@ -990,8 +1057,8 @@
     if (prev && targets.some(x=>x.name===prev)) els.optTarget.value=prev;
 
     const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
-    els.optTopSuggest.textContent = best.length
-      ? `Εναλλακτικές χαμηλότερου CF: ` + best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")
+    els.optSuggest.textContent = best.length
+      ? `Lower-CF alternatives: ${best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")}`
       : "—";
   }
 
@@ -1016,7 +1083,7 @@
       .filter(x=>x.t>0 && Number.isFinite(x.cf) && x.cf>0)
       .sort((a,b)=>b.cf-a.cf);
 
-    const movedFrom = []; // for user-friendly explanation
+    const movedFrom = [];
 
     for (const d of donors){
       if (d.i === targetIdx) continue;
@@ -1038,21 +1105,19 @@
     return {ok:true, fuels:out, movedFrom};
   }
 
-  // Simplified optimizer chart: 100% stacked mix (% consumption)
-  function renderOptMixChart(currentFuels, afterFuels, unit){
+  // User-friendly 100% stacked bars: Current vs After
+  function renderMixChart(currentFuels, afterFuels, unit){
     if (!chartsEnabled) return;
     ensureCharts();
 
-    const toMap = (arr) => {
+    const toMap = (arr)=>{
       const m = new Map();
       for (const f of arr){
         const t = Math.max(0, consToTon(f.cons, unit));
-        if (!m.has(f.name)) m.set(f.name, 0);
-        m.set(f.name, m.get(f.name) + t);
+        m.set(f.name, (m.get(f.name)||0) + t);
       }
       return m;
     };
-
     const curMap = toMap(currentFuels);
     const aftMap = toMap(afterFuels);
 
@@ -1063,20 +1128,19 @@
     const curTotal = Array.from(curMap.values()).reduce((a,b)=>a+b,0) || 1;
     const aftTotal = Array.from(aftMap.values()).reduce((a,b)=>a+b,0) || 1;
 
-    const series = allNames.map((name) => {
+    const series = allNames.map(name => {
       const curPct = ( (curMap.get(name)||0) / curTotal ) * 100;
       const aftPct = ( (aftMap.get(name)||0) / aftTotal ) * 100;
       return {
         name,
         type:"bar",
         stack:"mix",
-        emphasis:{ focus:"series" },
-        data: [ Number(curPct.toFixed(2)), Number(aftPct.toFixed(2)) ],
+        data: [Number(curPct.toFixed(2)), Number(aftPct.toFixed(2))],
         barWidth:18
       };
     });
 
-    optMixChart.setOption({
+    chMix.setOption({
       backgroundColor:"transparent",
       tooltip:{
         trigger:"axis",
@@ -1086,9 +1150,9 @@
           const lines = ps
             .filter(p=>p.data>0.01)
             .sort((a,b)=>b.data-a.data)
-            .slice(0,8)
+            .slice(0,10)
             .map(p=>`${p.marker} ${p.seriesName}: <b>${fmt(p.data,2)}%</b>`);
-          return `<b>${label}</b><br/>` + (lines.length?lines.join("<br/>"):"(no consumption)");
+          return `<b>${label}</b><br/>${lines.join("<br/>")}`;
         }
       },
       legend:{
@@ -1096,7 +1160,7 @@
         top:0,
         textStyle:{ color:"rgba(255,255,255,.75)" }
       },
-      grid:{ left:40, right:20, top:44, bottom:28 },
+      grid:{ left:44, right:20, top:44, bottom:26 },
       xAxis:{
         type:"value",
         max:100,
@@ -1114,132 +1178,575 @@
     });
   }
 
-  // ===== Sanity hints (user friendly) =====
-  function sanityMessage(shipType, distanceNm){
-    // not strict, just helpful ranges
-    const d = Number(distanceNm);
-    if (!Number.isFinite(d) || d<=0) return "Δώσε annual distance (nm).";
+  // Added chart #1: Att/Req vs Distance (continuous)
+  function renderRatioVsDistance(shipType, cap, corr, fuels, unit, required){
+    if (!chartsEnabled) return;
+    ensureCharts();
+    const baseDist = Number(els.distance.value);
+    const co2_t = totalCO2t(fuels, unit);
 
-    const typeHints = {
-      bulk: "Bulk συνήθως ~35,000–70,000 nm/yr.",
-      tanker: "Tanker συνήθως ~55,000–85,000 nm/yr (εκτός αν είναι πολύ low utilization).",
-      container: "Container liner συχνά ~70,000–100,000+ nm/yr.",
-      gas_65p: "Gas carriers συχνά ~50,000–90,000 nm/yr.",
-      gas_65m: "Gas carriers συχνά ~50,000–80,000 nm/yr.",
-      general_20p: "General cargo συχνά ~35,000–60,000 nm/yr.",
-      general_20m: "General cargo συχνά ~30,000–55,000 nm/yr.",
-      refrig: "Reefer συχνά ~40,000–70,000 nm/yr.",
-      combo: "Combination carriers συχνά ~40,000–70,000 nm/yr.",
-      lng_100p: "LNG συχνά ~60,000–90,000 nm/yr.",
-      lng_100m: "LNG συχνά ~60,000–90,000 nm/yr.",
-      roro_vc: "Vehicle carriers ~65,000–85,000 nm/yr.",
-      roro_cargo: "Ro-ro cargo ~55,000–75,000 nm/yr.",
-      roro_pax: "Ro-ro pax varies, αλλά συχνά 50,000+ nm/yr.",
-      cruise: "Cruise varies, συχνά 40,000–70,000 nm/yr.",
-      hsc: "HSC varies a lot."
-    };
+    const pts=[];
+    for(let i=0;i<=40;i++){
+      const factor = 0.5 + i*(1/40);
+      const dist = baseDist*factor;
+      const att = attainedCII(co2_t, cap, dist, corr);
+      const ratio = att/required;
+      pts.push([dist, Number(ratio.toFixed(5))]);
+    }
 
-    const hint = typeHints[shipType] || "Δώσε ρεαλιστικό annual distance.";
-    if (d < 15000) return `⚠️ Πολύ χαμηλό annual distance (${fmt0(d)} nm). Αυτό συνήθως “φουσκώνει” το Attained CII. ${hint}`;
-    if (d > 120000) return `ℹ️ Πολύ υψηλό annual distance (${fmt0(d)} nm). Έλεγξε αν είναι annual. ${hint}`;
-    return `✅ ${hint}`;
+    const dd = DD[shipType];
+    chRatioDist.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis", formatter:(ps)=>{
+        const x = Number(ps[0].axisValue);
+        const y = ps[0].data[1];
+        return `Distance: <b>${fmt0(x)} nm</b><br/>Att/Req: <b>${fmt(y,3)}</b>`;
+      }},
+      grid:{ left:56, right:18, top:18, bottom:44 },
+      xAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      series:[
+        {
+          type:"line",
+          smooth:true,
+          symbolSize:4,
+          lineStyle:{ width:3 },
+          areaStyle:{ opacity:0.06 },
+          data: pts
+        },
+        // Threshold lines (A/B/C/D boundaries)
+        {
+          type:"line",
+          symbol:"none",
+          data: [[pts[0][0], dd.d1],[pts[pts.length-1][0], dd.d1]],
+          lineStyle:{ type:"dashed", width:1, opacity:.8 },
+          tooltip:{ show:false }
+        },
+        {
+          type:"line",
+          symbol:"none",
+          data: [[pts[0][0], dd.d2],[pts[pts.length-1][0], dd.d2]],
+          lineStyle:{ type:"dashed", width:1, opacity:.8 },
+          tooltip:{ show:false }
+        },
+        {
+          type:"line",
+          symbol:"none",
+          data: [[pts[0][0], dd.d3],[pts[pts.length-1][0], dd.d3]],
+          lineStyle:{ type:"dashed", width:1, opacity:.8 },
+          tooltip:{ show:false }
+        },
+        {
+          type:"line",
+          symbol:"none",
+          data: [[pts[0][0], dd.d4],[pts[pts.length-1][0], dd.d4]],
+          lineStyle:{ type:"dashed", width:1, opacity:.8 },
+          tooltip:{ show:false }
+        }
+      ]
+    });
+
+    return pts;
   }
 
-  // ===== PDF Report =====
-  async function downloadPDFReport(state){
-    try{
-      if (!chartsEnabled) {
-        alert("Charts blocked. Δεν μπορώ να βγάλω PDF με charts. (Άνοιξε/επίτρεψε το echarts CDN ή βάλε local.)");
-        return;
-      }
-      ensureCharts();
+  // Added chart #2: optimizer curve (Att/Req vs switch %)
+  function renderOptimizerCurve(shipType, cap, dist, corr, fuels, unit, required, targetName){
+    if (!chartsEnabled) return;
+    ensureCharts();
 
-      // jsPDF
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation:"p", unit:"mm", format:"a4" });
+    const pts=[];
+    for(let p=0;p<=100;p+=5){
+      const scen = optimizerScenario(fuels, unit, targetName, p);
+      if (!scen.ok) { pts.push([p, null]); continue; }
+      const co2 = totalCO2t(scen.fuels, unit);
+      const att = attainedCII(co2, cap, dist, corr);
+      const ratio = att/required;
+      pts.push([p, Number(ratio.toFixed(5))]);
+    }
 
-      const margin = 10;
-      let y = 12;
+    chOptCurve.setOption({
+      backgroundColor:"transparent",
+      tooltip:{ trigger:"axis", formatter:(ps)=>{
+        const x = ps[0].data[0];
+        const y = ps[0].data[1];
+        return `Switch: <b>${x}%</b><br/>Att/Req: <b>${fmt(y,3)}</b>`;
+      }},
+      grid:{ left:56, right:18, top:18, bottom:44 },
+      xAxis:{
+        type:"value",
+        min:0, max:100,
+        axisLabel:{ color:"rgba(255,255,255,.75)", formatter:(v)=> v + "%" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      yAxis:{
+        type:"value",
+        axisLabel:{ color:"rgba(255,255,255,.75)" },
+        splitLine:{ lineStyle:{ color:"rgba(255,255,255,.10)" } },
+        axisLine:{ lineStyle:{ color:"rgba(255,255,255,.18)" } }
+      },
+      series:[{
+        type:"line",
+        smooth:true,
+        symbolSize:6,
+        lineStyle:{ width:3 },
+        areaStyle:{ opacity:0.06 },
+        data: pts
+      }]
+    });
 
-      // Header
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14);
-      doc.text("CII Report — Attained / Required / Rating", margin, y);
-      y += 7;
+    return pts;
+  }
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      const meta = [
-        `Ship type: ${state.shipTypeLabel}`,
-        `Year: ${state.year}`,
-        `Capacity: ${fmt0(state.cap)} (${state.capType})`,
-        `Annual distance: ${fmt0(state.dist)} nm`,
-        `Consumption unit: ${state.unit}`,
-        `Correction factor: ${state.corr}`
-      ];
-      meta.forEach(line => { doc.text(line, margin, y); y += 5; });
-      y += 2;
+  // =======================
+  // PDF (Vector charts, no screenshots)
+  // =======================
+  function pdfColor(hexOrCss){
+    // jsPDF wants RGB, we accept hex "#rrggbb"
+    const s = String(hexOrCss).trim();
+    if (s.startsWith("#") && s.length===7){
+      const r = parseInt(s.slice(1,3),16);
+      const g = parseInt(s.slice(3,5),16);
+      const b = parseInt(s.slice(5,7),16);
+      return [r,g,b];
+    }
+    // fallback neutral
+    return [255,255,255];
+  }
 
-      // KPIs block
-      doc.setFont("helvetica", "bold");
-      doc.text("KPIs", margin, y);
-      y += 6;
-
-      doc.setFont("helvetica", "normal");
-      const kpis = [
-        `Total CO2: ${fmt0(state.co2_t)} tCO2`,
-        `Attained CII: ${fmt(state.att,3)} gCO2/(capacity·nm)`,
-        `Required CII: ${fmt(state.req.required,3)} gCO2/(capacity·nm)`,
-        `Rating: ${state.rr.r} (Att/Req ${fmt(state.rr.ratio,3)})`
-      ];
-      kpis.forEach(line => { doc.text(line, margin, y); y += 5; });
-      y += 2;
-
-      // Fuel table (top 8 rows)
+  function drawBox(doc, x, y, w, h, title){
+    doc.setDrawColor(200,200,200);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(x, y, w, h, 2, 2);
+    if (title){
       doc.setFont("helvetica","bold");
-      doc.text("Fuel inputs (top rows)", margin, y);
-      y += 6;
-      doc.setFont("helvetica","normal");
-
-      const fuels = state.fuels.slice(0,8);
-      fuels.forEach((f, idx)=>{
-        const t = consToTon(f.cons, state.unit);
-        doc.text(`${idx+1}. ${f.name} — cons: ${fmt0(f.cons)} (${state.unit}) | CF: ${f.cf} | CO2: ${fmt(t*f.cf,1)} t`, margin, y);
-        y += 5;
-      });
-      y += 2;
-
-      // Charts images
-      const addChart = (title, chart, w=190, h=55) => {
-        const img = chart.getDataURL({ type:"png", pixelRatio:2, backgroundColor:"#0b1020" });
-        if (y + h + 10 > 287) { doc.addPage(); y = 12; }
-        doc.setFont("helvetica","bold");
-        doc.text(title, margin, y);
-        y += 4;
-        doc.addImage(img, "PNG", margin, y, w, h);
-        y += h + 8;
-      };
-
-      addChart("Rating Gauge", gaugeChart, 190, 55);
-      addChart("CO2 by fuel", barChart, 190, 55);
-      addChart("Grade vs Distance", gradeDistChart, 190, 55);
-      addChart("Fuel mix % (Current vs After)", optMixChart, 190, 60);
-      addChart("Projection: Required vs Attained", lineChart, 190, 55);
-
-      doc.save(`CII_Report_${state.shipType}_${state.year}.pdf`);
-    } catch(e){
-      console.error(e);
-      alert("PDF generation failed. Άνοιξε Console (F12) για λεπτομέρειες.");
+      doc.setFontSize(10);
+      doc.text(title, x+2, y+5);
     }
   }
 
-  // ===== Run & compute =====
+  function drawKPI(doc, x, y, label, value){
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120,120,120);
+    doc.text(label, x, y);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(12);
+    doc.setTextColor(20,20,20);
+    doc.text(String(value), x, y+6);
+  }
+
+  function drawAxes(doc, x, y, w, h, xLabel, yLabel){
+    doc.setDrawColor(120,120,120);
+    doc.setLineWidth(0.2);
+    // axes
+    doc.line(x, y+h, x+w, y+h);
+    doc.line(x, y, x, y+h);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120,120,120);
+    if (xLabel) doc.text(xLabel, x+w-2, y+h+5, {align:"right"});
+    if (yLabel) doc.text(yLabel, x, y-2);
+  }
+
+  function drawBarChart(doc, x, y, w, h, labels, values, title){
+    drawBox(doc, x, y, w, h, title);
+    const padL = 10, padR = 4, padT = 10, padB = 10;
+    const cx = x + padL, cy = y + padT, cw = w - padL - padR, ch = h - padT - padB;
+
+    drawAxes(doc, cx, cy, cw, ch, "", "tCO₂");
+
+    const maxV = Math.max(1, ...values);
+    const n = Math.max(1, values.length);
+    const gap = 2;
+    const bw = Math.max(2, (cw - gap*(n-1)) / n);
+
+    for (let i=0;i<n;i++){
+      const v = values[i] || 0;
+      const bh = (v/maxV) * (ch-2);
+      const bx = cx + i*(bw+gap);
+      const by = cy + (ch - bh);
+      doc.setFillColor(124,92,255);
+      doc.roundedRect(bx, by, bw, bh, 1.2, 1.2, "F");
+
+      // tiny labels
+      doc.setFontSize(6.5);
+      doc.setTextColor(90,90,90);
+      const lab = String(labels[i] || "").slice(0,10);
+      doc.text(lab, bx + bw/2, cy + ch + 4, {align:"center"});
+    }
+  }
+
+  function drawLineChart(doc, x, y, w, h, xs, ys, title, yLabel){
+    drawBox(doc, x, y, w, h, title);
+    const padL = 12, padR = 6, padT = 10, padB = 10;
+    const cx = x + padL, cy = y + padT, cw = w - padL - padR, ch = h - padT - padB;
+
+    drawAxes(doc, cx, cy, cw, ch, "", yLabel || "");
+
+    const minY = Math.min(...ys.filter(v=>Number.isFinite(v)));
+    const maxY = Math.max(...ys.filter(v=>Number.isFinite(v)));
+    const spanY = Math.max(1e-9, (maxY - minY) || 1);
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const spanX = Math.max(1e-9, (maxX - minX) || 1);
+
+    const toX = (v)=> cx + ((v-minX)/spanX)*cw;
+    const toY = (v)=> cy + (ch - ((v-minY)/spanY)*ch);
+
+    // gridlines (light)
+    doc.setDrawColor(220,220,220);
+    doc.setLineWidth(0.1);
+    for (let i=1;i<=3;i++){
+      const gy = cy + (ch*i/4);
+      doc.line(cx, gy, cx+cw, gy);
+    }
+
+    // line
+    doc.setDrawColor(20,20,20);
+    doc.setLineWidth(0.6);
+    for (let i=1;i<xs.length;i++){
+      if (!Number.isFinite(ys[i-1]) || !Number.isFinite(ys[i])) continue;
+      doc.line(toX(xs[i-1]), toY(ys[i-1]), toX(xs[i]), toY(ys[i]));
+    }
+
+    // points
+    doc.setFillColor(124,92,255);
+    for (let i=0;i<xs.length;i++){
+      if (!Number.isFinite(ys[i])) continue;
+      doc.circle(toX(xs[i]), toY(ys[i]), 0.7, "F");
+    }
+
+    // x labels (first/last)
+    doc.setFontSize(7);
+    doc.setTextColor(90,90,90);
+    doc.text(String(xs[0]), cx, cy+ch+5);
+    doc.text(String(xs[xs.length-1]), cx+cw, cy+ch+5, {align:"right"});
+  }
+
+  function drawStepGradeChart(doc, x, y, w, h, xs, gradeNums, title){
+    drawBox(doc, x, y, w, h, title);
+    const padL = 14, padR = 6, padT = 10, padB = 10;
+    const cx = x + padL, cy = y + padT, cw = w - padL - padR, ch = h - padT - padB;
+
+    // y is 1..5 inverted
+    drawAxes(doc, cx, cy, cw, ch, "nm", "Grade");
+
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const spanX = Math.max(1e-9, (maxX - minX) || 1);
+    const toX = (v)=> cx + ((v-minX)/spanX)*cw;
+    const toY = (g)=> cy + ((g-1)/4)*ch; // 1 at top, 5 at bottom
+    // gridlines
+    doc.setDrawColor(220,220,220); doc.setLineWidth(0.1);
+    for (let g=1; g<=5; g++){
+      const gy = toY(g);
+      doc.line(cx, gy, cx+cw, gy);
+      doc.setFontSize(7);
+      doc.setTextColor(90,90,90);
+      doc.text(numToRating(g), cx-3, gy+2, {align:"right"});
+    }
+
+    doc.setDrawColor(20,20,20); doc.setLineWidth(0.6);
+    for (let i=1;i<xs.length;i++){
+      const x0 = toX(xs[i-1]), x1 = toX(xs[i]);
+      const y0 = toY(gradeNums[i-1]), y1 = toY(gradeNums[i]);
+
+      // step-middle style: horizontal then vertical
+      const xm = (x0 + x1) / 2;
+      doc.line(x0, y0, xm, y0);
+      doc.line(xm, y0, xm, y1);
+      doc.line(xm, y1, x1, y1);
+    }
+
+    // x labels
+    doc.setFontSize(7);
+    doc.setTextColor(90,90,90);
+    doc.text(fmt0(minX), cx, cy+ch+5);
+    doc.text(fmt0(maxX), cx+cw, cy+ch+5, {align:"right"});
+  }
+
+  function drawStacked100(doc, x, y, w, h, labels, seriesByName, title){
+    // labels: ["Current mix","After switch"]
+    // seriesByName: [{name, values:[pct0,pct1]} ...]
+    drawBox(doc, x, y, w, h, title);
+    const padL = 20, padR = 6, padT = 10, padB = 10;
+    const cx = x + padL, cy = y + padT, cw = w - padL - padR, ch = h - padT - padB;
+
+    // Bars
+    const barH = 8;
+    const gapY = 12;
+    const startY = cy + 8;
+
+    // palette
+    const palette = [
+      [124,92,255],[43,213,118],[255,204,0],[255,122,87],[255,92,122],
+      [130,220,255],[200,160,255],[160,255,200],[255,170,100]
+    ];
+
+    doc.setFontSize(8);
+    doc.setTextColor(90,90,90);
+
+    for (let r=0;r<labels.length;r++){
+      const y0 = startY + r*gapY;
+      doc.text(labels[r], cx-2, y0+6, {align:"right"});
+
+      let acc = 0;
+      for (let i=0;i<seriesByName.length;i++){
+        const pct = Math.max(0, seriesByName[i].values[r] || 0);
+        if (pct < 0.2) continue;
+        const segW = (pct/100) * cw;
+        const col = palette[i % palette.length];
+        doc.setFillColor(col[0], col[1], col[2]);
+        doc.rect(cx + (acc/100)*cw, y0, segW, barH, "F");
+        acc += pct;
+      }
+
+      // outline
+      doc.setDrawColor(160,160,160);
+      doc.setLineWidth(0.2);
+      doc.rect(cx, y0, cw, barH);
+    }
+
+    // Legend (top 8)
+    const top = seriesByName
+      .map(s=>{
+        const total = (s.values[0]||0)+(s.values[1]||0);
+        return {name:s.name, total, values:s.values};
+      })
+      .sort((a,b)=>b.total-a.total)
+      .slice(0,8);
+
+    let lx = cx, ly = cy + ch - 10;
+    doc.setFontSize(7);
+    for (let i=0;i<top.length;i++){
+      const col = palette[i % palette.length];
+      doc.setFillColor(col[0], col[1], col[2]);
+      doc.rect(lx, ly-3, 3, 3, "F");
+      doc.setTextColor(90,90,90);
+      doc.text(top[i].name.slice(0,22), lx+5, ly);
+      lx += 48;
+      if (lx > cx+cw-48){ lx = cx; ly += 6; }
+    }
+  }
+
+  async function downloadPDF(state){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
+
+    // White professional report
+    doc.setFillColor(255,255,255);
+    doc.rect(0,0,210,297,"F");
+
+    // Header
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(16);
+    doc.setTextColor(20,20,20);
+    doc.text("CII Report", 12, 16);
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(10);
+    doc.setTextColor(80,80,80);
+    doc.text(`Generated: ${new Date().toLocaleString("en-US")}`, 12, 22);
+
+    // Inputs summary
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+    doc.setTextColor(20,20,20);
+    doc.text("Inputs", 12, 32);
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(60,60,60);
+
+    const inLines = [
+      `Ship type: ${state.shipTypeLabel}`,
+      `Reporting year: ${state.year}`,
+      `Capacity: ${fmt0(state.cap)} (${state.capType})`,
+      `Annual distance: ${fmt0(state.dist)} nm`,
+      `Consumption unit: ${state.unit}`,
+      `Correction factor: ${state.corr}`,
+    ];
+    let yy = 38;
+    for (const line of inLines){ doc.text(line, 12, yy); yy += 5; }
+
+    // KPI tiles
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(11);
+    doc.setTextColor(20,20,20);
+    doc.text("Key results", 12, 70);
+
+    // Draw KPI boxes
+    const kx = 12, ky = 74, kw = 186, kh = 22;
+    doc.setDrawColor(210,210,210); doc.setLineWidth(0.2);
+    doc.roundedRect(kx, ky, kw, kh, 2,2);
+
+    const colW = kw/4;
+    drawKPI(doc, kx+4,       ky+6, "Total CO2 (tCO2)", fmt0(state.co2_t));
+    drawKPI(doc, kx+4+colW,  ky+6, "Attained CII", fmt(state.att,3));
+    drawKPI(doc, kx+4+colW*2,ky+6, "Required CII", fmt(state.req.required,3));
+    drawKPI(doc, kx+4+colW*3,ky+6, "Rating (Att/Req)", `${state.rr.r} (${fmt(state.rr.ratio,3)})`);
+
+    // Page 1 charts (vector)
+    // Chart blocks
+    const c1x=12, c1y=104, cW=186, cH=56;
+
+    // CO2 by fuel
+    const labels = state.fuels.map(f=>f.name);
+    const values = state.fuels.map(f=>{
+      const t = consToTon(f.cons, state.unit);
+      return (t>0 && f.cf>0) ? t*f.cf : 0;
+    });
+    drawBarChart(doc, c1x, c1y, cW, cH, labels, values, "CO2 by fuel (tCO2)");
+
+    // Projection
+    const years=[2023,2024,2025,2026,2027,2028,2029,2030];
+    const reqSeries = years.map(y=> state.req.cii_ref*(100-Z(y))/100);
+    const attSeries = years.map(()=> state.att);
+    // Draw as two lines: required (solid) and attained (dashed)
+    // We'll draw required with the line helper then overlay attained as dashed manually
+    drawLineChart(doc, c1x, c1y+62, cW, cH, years, reqSeries, "Projection: Required CII", "CII");
+    // overlay attained dashed
+    {
+      const padL=12, padR=6, padT=10, padB=10;
+      const cx=c1x+padL, cy=(c1y+62)+padT, cw=cW-padL-padR, ch=cH-padT-padB;
+      const minY = Math.min(...reqSeries, ...attSeries);
+      const maxY = Math.max(...reqSeries, ...attSeries);
+      const spanY = Math.max(1e-9, (maxY-minY) || 1);
+      const toX=(v)=> cx + ((v-years[0])/(years[years.length-1]-years[0]))*cw;
+      const toY=(v)=> cy + (ch - ((v-minY)/spanY)*ch);
+
+      doc.setDrawColor(80,80,80);
+      doc.setLineWidth(0.4);
+      // dashed effect: small segments
+      for (let i=1;i<years.length;i++){
+        const x0=toX(years[i-1]), y0=toY(attSeries[i-1]);
+        const x1=toX(years[i]),   y1=toY(attSeries[i]);
+        const segs=10;
+        for (let s=0;s<segs;s+=2){
+          const t0=s/segs, t1=(s+1)/segs;
+          const xa=x0+(x1-x0)*t0, ya=y0+(y1-y0)*t0;
+          const xb=x0+(x1-x0)*t1, yb=y0+(y1-y0)*t1;
+          doc.line(xa,ya,xb,yb);
+        }
+      }
+      doc.setFont("helvetica","normal"); doc.setFontSize(8);
+      doc.setTextColor(90,90,90);
+      doc.text("Attained (constant)", c1x+2, c1y+62+6);
+    }
+
+    // Page 2
+    doc.addPage();
+    doc.setFillColor(255,255,255);
+    doc.rect(0,0,210,297,"F");
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(14);
+    doc.setTextColor(20,20,20);
+    doc.text("Sensitivity & Optimization", 12, 16);
+
+    // Grade vs distance
+    const baseDist = state.dist;
+    const co2_t = state.co2_t;
+    const pts=[];
+    for(let i=0;i<=24;i++){
+      const factor = 0.5 + i*(1/24);
+      const dist = baseDist*factor;
+      const att = attainedCII(co2_t, state.cap, dist, state.corr);
+      const r = rating(state.shipType, att, state.req.required);
+      pts.push({dist, gradeNum:ratingToNum(r.r)});
+    }
+    drawStepGradeChart(doc, 12, 24, 186, 56, pts.map(p=>p.dist), pts.map(p=>p.gradeNum), "Grade vs Distance");
+
+    // Att/Req vs distance
+    const rpts=[];
+    for(let i=0;i<=40;i++){
+      const factor = 0.5 + i*(1/40);
+      const dist = baseDist*factor;
+      const att = attainedCII(co2_t, state.cap, dist, state.corr);
+      rpts.push([dist, att/state.req.required]);
+    }
+    drawLineChart(
+      doc, 12, 86, 186, 56,
+      rpts.map(p=>p[0]),
+      rpts.map(p=>p[1]),
+      "Attained/Required vs Distance", "Att/Req"
+    );
+
+    // Optimizer mix (current vs after)
+    const mix = state.optMixForPDF;
+    if (mix){
+      drawStacked100(
+        doc, 12, 148, 186, 52,
+        ["Current mix","After switch"],
+        mix.seriesByName,
+        `Fuel mix (%) — switch ${mix.pct}% to ${mix.target}`
+      );
+    } else {
+      drawBox(doc, 12, 148, 186, 52, "Fuel mix (%)");
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.setTextColor(90,90,90);
+      doc.text("No optimizer scenario available.", 14, 174);
+    }
+
+    // Optimizer curve (Att/Req vs %)
+    const curve = state.optCurveForPDF;
+    if (curve){
+      drawLineChart(
+        doc, 12, 206, 186, 56,
+        curve.map(p=>p[0]),
+        curve.map(p=>p[1]),
+        "Optimizer sensitivity (Att/Req vs switch %)", "Att/Req"
+      );
+    }
+
+    doc.save(`CII_Report_${state.shipType}_${state.year}.pdf`);
+  }
+
+  // =======================
+  // PNG export (kept)
+  // =======================
+  function exportPNG(){
+    if (!chartsEnabled) { alert("Charts are unavailable (CDN blocked)."); return; }
+    ensureCharts();
+    const bg="#0a0f1e";
+    const a=document.createElement("a");
+    const list=[
+      ["cii_gauge.png", chGauge],
+      ["cii_co2_by_fuel.png", chBar],
+      ["cii_grade_vs_distance.png", chGradeDist],
+      ["cii_mix.png", chMix],
+      ["cii_projection.png", chProj],
+      ["cii_ratio_vs_distance.png", chRatioDist],
+      ["cii_optimizer_curve.png", chOptCurve],
+    ];
+    for (const [name,ch] of list){
+      const url = ch.getDataURL({type:"png", pixelRatio:2, backgroundColor:bg});
+      a.href=url; a.download=name; a.click();
+    }
+  }
+
+  // =======================
+  // Main compute & render
+  // =======================
   let lastState = null;
 
   function run(){
     try{
       hideErr();
-      ensureCharts();
+      refreshOptTargets();
 
       const shipType = els.shipType.value;
       const year = Number(els.year.value);
@@ -1254,17 +1761,10 @@
 
       const fuels = getFuels();
 
-      // user-friendly sanity text
-      sanityText.textContent = sanityMessage(shipType, dist);
-
       const co2_t = totalCO2t(fuels, unit);
       const att   = attainedCII(co2_t, cap, dist, corr);
       const req   = requiredCII(shipType, cap, year);
       const rr    = rating(shipType, att, req.required);
-
-      // capacity type label
-      const capType = (shipType.startsWith("roro") || shipType==="cruise" || shipType==="hsc") ? "GT" : "DWT";
-      const shipTypeLabel = els.shipType.options[els.shipType.selectedIndex]?.textContent || shipType;
 
       // KPIs
       els.kpiCO2.textContent = `${fmt0(co2_t)} tCO₂`;
@@ -1274,32 +1774,38 @@
       els.kpiRating.style.color = ratingColor(rr.r);
       els.kpiBand.textContent = `Att/Req = ${fmt(rr.ratio,3)}`;
 
-      ratingBadge.textContent = `Rating: ${rr.r} • Att/Req ${fmt(rr.ratio,3)}`;
-      ratingBadge.style.borderColor = "rgba(255,255,255,.12)";
-      ratingBadge.style.background = `linear-gradient(90deg, ${ratingColor(rr.r)}22, rgba(255,255,255,.05))`;
+      // Rating chip
+      els.txtRating.textContent = `Rating: ${rr.r} • Att/Req ${fmt(rr.ratio,3)}`;
+      const chip = els.chipRating;
+      chip.style.borderColor = "rgba(255,255,255,.10)";
+      chip.style.background = "rgba(255,255,255,.06)";
+      chip.style.color = "rgba(255,255,255,.86)";
+      chip.querySelector(".dot").style.background = ratingColor(rr.r);
 
-      lastRun.textContent = `Updated: ${new Date().toLocaleString("el-GR")}`;
+      els.txtUpdated.textContent = `Updated: ${new Date().toLocaleString("en-US")}`;
 
       // Charts
-      renderGauge(rr.ratio, rr.r, rr.dd);
+      renderGauge(rr.ratio, rr);
       renderBar(fuels, unit);
       renderGradeVsDistance(shipType, cap, corr, fuels, unit, req.required);
       renderProjection(req.cii_ref, att);
+      renderRatioVsDistance(shipType, cap, corr, fuels, unit, req.required);
 
-      // Optimizer
-      refreshOptTargets();
+      // Optimizer (UI + charts)
       const target = els.optTarget.value || "";
       const pct = Number(els.optPct.value || 0);
 
       const scen = optimizerScenario(fuels, unit, target, pct);
+      let optMixForPDF = null;
+
       if (!scen.ok){
-        els.optCur.textContent = rr.r;
+        els.optCur.textContent = `${rr.r} (Att/Req ${fmt(rr.ratio,2)})`;
         els.optCur.style.color = ratingColor(rr.r);
         els.optNew.textContent = "—";
         els.optDelta.textContent = "—";
         els.optCO2.textContent = "—";
-        // mix chart current=after
-        renderOptMixChart(fuels, fuels, unit);
+        renderMixChart(fuels, fuels, unit);
+        renderOptimizerCurve(shipType, cap, dist, corr, fuels, unit, req.required, target);
       } else {
         const newCO2 = totalCO2t(scen.fuels, unit);
         const newAtt = attainedCII(newCO2, cap, dist, corr);
@@ -1314,38 +1820,70 @@
         els.optDelta.textContent = `${(newAtt-att)>=0?"+":""}${fmt(newAtt-att,3)}`;
         els.optCO2.textContent = `${(newCO2-co2_t)>=0?"+":""}${fmt(newCO2-co2_t,1)} tCO₂`;
 
-        // simplified % chart
-        renderOptMixChart(fuels, scen.fuels, unit);
+        renderMixChart(fuels, scen.fuels, unit);
+
+        // Prepare vector mix data for PDF
+        const toMap = (arr)=>{
+          const m = new Map();
+          for (const f of arr){
+            const t = Math.max(0, consToTon(f.cons, unit));
+            m.set(f.name, (m.get(f.name)||0) + t);
+          }
+          return m;
+        };
+        const curMap = toMap(fuels);
+        const aftMap = toMap(scen.fuels);
+        const allNames = Array.from(new Set([...curMap.keys(), ...aftMap.keys()]))
+          .filter(n=>n && n.trim().length)
+          .sort((a,b)=>a.localeCompare(b));
+
+        const curTotal = Array.from(curMap.values()).reduce((a,b)=>a+b,0) || 1;
+        const aftTotal = Array.from(aftMap.values()).reduce((a,b)=>a+b,0) || 1;
+
+        const seriesByName = allNames.map(name=>({
+          name,
+          values: [
+            ((curMap.get(name)||0)/curTotal)*100,
+            ((aftMap.get(name)||0)/aftTotal)*100,
+          ]
+        }));
+
+        optMixForPDF = { target, pct, seriesByName };
+        renderOptimizerCurve(shipType, cap, dist, corr, fuels, unit, req.required, target);
       }
 
-      // store state for PDF
+      // Save state for PDF
+      const capType = (shipType.startsWith("roro") || shipType==="cruise" || shipType==="hsc") ? "GT" : "DWT";
+      const shipTypeLabel = els.shipType.options[els.shipType.selectedIndex]?.textContent || shipType;
+
+      // also store optimizer curve for PDF
+      const curvePts = [];
+      for(let p=0;p<=100;p+=5){
+        const sc = optimizerScenario(fuels, unit, target, p);
+        if (!sc.ok){ curvePts.push([p, NaN]); continue; }
+        const co2 = totalCO2t(sc.fuels, unit);
+        const a = attainedCII(co2, cap, dist, corr);
+        curvePts.push([p, a/req.required]);
+      }
+
       lastState = {
-        shipType,
-        shipTypeLabel,
-        year,
-        cap,
-        capType,
-        dist,
-        corr,
-        unit,
+        shipType, shipTypeLabel, year,
+        cap, capType, dist, corr, unit,
         fuels: fuels.map(f=>({...f})),
-        co2_t,
-        att,
-        req,
-        rr
+        co2_t, att, req, rr,
+        optMixForPDF,
+        optCurveForPDF: curvePts.filter(p=>Number.isFinite(p[1]))
       };
 
-      // enable pdf when we have a state and jsPDF exists
-      const pdfOK = !!(window.jspdf && window.jspdf.jsPDF) && chartsEnabled;
-      pdfBtn.disabled = !pdfOK;
-
     } catch(e){
-      showErr("JS Error:\n" + (e && e.message ? e.message : String(e)) + "\n\nΆνοιξε F12 → Console για λεπτομέρειες.");
+      showErr("Error:\n" + (e && e.message ? e.message : String(e)));
       console.error(e);
     }
   }
 
-  // ===== Events =====
+  // =======================
+  // Events
+  // =======================
   ["shipType","year","capacity","distance","corr","fuelUnit"].forEach(id=>{
     document.getElementById(id).addEventListener("input", run);
     document.getElementById(id).addEventListener("change", run);
@@ -1379,37 +1917,62 @@
   els.optTarget.addEventListener("change", run);
   els.optPct.addEventListener("input", run);
 
-  els.exportBtn.addEventListener("click", ()=>{
-    if (!chartsEnabled || !window.echarts){
-      alert("ECharts δεν φορτώθηκε, άρα δεν υπάρχει export PNG.");
+  document.getElementById("btnPNG").addEventListener("click", exportPNG);
+
+  document.getElementById("btnPDF").addEventListener("click", ()=>{
+    if (!window.jspdf || !window.jspdf.jsPDF){
+      alert("PDF library unavailable.");
       return;
     }
-    ensureCharts();
-    const a=document.createElement("a");
-    const bg="#0b1020";
-    const list=[
-      ["cii_gauge.png", gaugeChart],
-      ["cii_co2_by_fuel.png", barChart],
-      ["cii_grade_vs_distance.png", gradeDistChart],
-      ["cii_fuel_mix_percent.png", optMixChart],
-      ["cii_projection.png", lineChart],
-    ];
-    for (const [name,ch] of list){
-      const url = ch.getDataURL({type:"png", pixelRatio:2, backgroundColor:bg});
-      a.href=url; a.download=name; a.click();
+    if (!lastState){
+      alert("No data to export yet.");
+      return;
     }
+    downloadPDF(lastState);
   });
 
-  pdfBtn.addEventListener("click", async ()=>{
-    if (!lastState) return;
-    await downloadPDFReport(lastState);
-  });
+  // =======================
+  // Init optimizer targets
+  // =======================
+  function buildTargets(fuels){
+    const seen=new Set();
+    const t=[];
+    for (const f of fuels){
+      const name=(f.name||"").trim();
+      if (!name) continue;
+      const key=name.toLowerCase();
+      if (seen.has(key)) continue;
+      if (!Number.isFinite(f.cf) || f.cf<=0) continue;
+      seen.add(key);
+      t.push({name, cf:f.cf});
+    }
+    return t.sort((a,b)=>a.name.localeCompare(b.name));
+  }
 
-  // ===== Init =====
+  function refreshOptTargets(){
+    const fuels = getFuels();
+    const merged = fuels.concat(ALT_LIBRARY.map(x=>({name:x.name, cons:0, cf:x.cf})));
+    const targets = buildTargets(merged);
+    const prev = els.optTarget.value;
+
+    els.optTarget.innerHTML = "";
+    for (const t of targets){
+      const o=document.createElement("option");
+      o.value=t.name;
+      o.textContent=`${t.name} (CF ${roundTo(t.cf,3)})`;
+      els.optTarget.appendChild(o);
+    }
+    if (prev && targets.some(x=>x.name===prev)) els.optTarget.value=prev;
+
+    const best = targets.slice().sort((a,b)=>a.cf-b.cf).slice(0,3);
+    els.optSuggest.textContent = best.length
+      ? `Lower-CF alternatives: ${best.map(b=>`${b.name} (CF ${roundTo(b.cf,3)})`).join(" • ")}`
+      : "—";
+  }
+
+  // initial
   refreshOptTargets();
-  [...els.fuelBody.querySelectorAll("tr")].forEach(wireRow);
   run();
-
 })();
 </script>
 </body>
